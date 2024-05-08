@@ -1,1 +1,1 @@
-dart pub global activate --source path packages/flutter_distributor
+dart pub global activate --source path ../flutter_distributor

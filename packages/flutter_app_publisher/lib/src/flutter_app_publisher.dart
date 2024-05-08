@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_app_publisher/src/api/app_package_publisher.dart';
+import 'package:flutter_app_publisher/src/publishers/oppo/app_package_publisher_oppo.dart';
 import 'package:flutter_app_publisher/src/publishers/publishers.dart';
 
 class FlutterAppPublisher {
@@ -15,6 +16,7 @@ class FlutterAppPublisher {
     AppPackagePublisherPlayStore(),
     AppPackagePublisherQiniu(),
     AppPackagePublisherVercel(),
+    AppPackagePublisherOppo(),
   ];
 
   Future<PublishResult> publish(
