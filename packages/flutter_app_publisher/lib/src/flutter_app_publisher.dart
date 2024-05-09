@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_app_publisher/src/api/app_package_publisher.dart';
+import 'package:flutter_app_publisher/src/publishers/mi/app_package_publisher_mi.dart';
 import 'package:flutter_app_publisher/src/publishers/oppo/app_package_publisher_oppo.dart';
 import 'package:flutter_app_publisher/src/publishers/publishers.dart';
 import 'package:flutter_app_publisher/src/publishers/vivo/app_package_publisher_vivo.dart';
@@ -19,6 +20,7 @@ class FlutterAppPublisher {
     AppPackagePublisherVercel(),
     AppPackagePublisherOppo(),
     AppPackagePublisherVivo(),
+    AppPackagePublisherMi(),
   ];
 
   Future<PublishResult> publish(
