@@ -71,8 +71,10 @@ class AppPackagePublisherOppo extends AppPackagePublisher {
   }
 
   Future<Map> submit(Map uploadInfo, Map appInfo) async {
-    Map<String, dynamic> params = appInfo['data'].cast<String, dynamic>();
-
+    Map<String, dynamic> data = appInfo['data'].cast<String, dynamic>();
+    Map<String, dynamic> params = {};
+    params['pkg_name'] = data['pkg_name'];
+    params['version_code'] = globalEnvironment[kEnvVersionCode];
     params['apk_url'] = [
       {
         'url': uploadInfo['data']['url'],
@@ -80,13 +82,44 @@ class AppPackagePublisherOppo extends AppPackagePublisher {
         'cpu_code': 0,
       }
     ];
-    params['version_code'] = globalEnvironment[kEnvVersionCode];
-    params['version_name'] = globalEnvironment[kEnvVersionName];
+    params['app_name'] = data['app_name'];
+    params['app_subname'] = data['app_subname'];
+    params['second_category_id'] = data['second_category_id'];
+    params['third_category_id'] = data['third_category_id'];
+    params['summary'] = data['summary'];
+    params['detail_desc'] = data['detail_desc'];
     params['update_desc'] = globalEnvironment[kEnvUpdateLog];
+    params['privacy_source_url'] = data['privacy_source_url'];
+    params['icon_url'] = data['icon_url'];
+    params['pic_url'] = data['pic_url'];
+    params['landscape_pic_url'] = data['landscape_pic_url'];
+    params['online_type'] = 1;
+    params['test_desc'] = data['test_desc'];
+    params['electronic_cert_url'] = data['electronic_cert_url'];
+    params['copyright_url'] = data['copyright_url'];
+    params['icp_url'] = data['icp_url'];
+    params['special_url'] = data['special_url'];
+    params['special_file_url'] = data['special_file_url'];
+    params['business_username'] = data['business_username'];
+    params['business_email'] = data['business_email'];
+    params['business_mobile'] = data['business_mobile'];
+    params['age_level'] = data['age_level'];
+    params['adaptive_equipment'] = data['adaptive_equipment'];
+    params['adaptive_type'] = 1;
+
     params['access_token'] = token!;
     params['timestamp'] = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-    String sign = signRequest(access!, params);
-    params['api_sign'] = sign;
+
+    params.removeWhere((key, value) => value == null);
+
+    params = params.map((key, value) {
+      if (value is List || value is Map) {
+        return MapEntry(key, jsonEncode(value));
+      } else {
+        return MapEntry(key, value);
+      }
+    });
+    params['api_sign'] = signRequest(access!, params);
     String content = await sendRequest(
         'https://oop-openapi-cn.heytapmobi.com/resource/v1/app/upd', params,
         isGet: false);
@@ -223,7 +256,11 @@ class AppPackagePublisherOppo extends AppPackagePublisher {
     for (String key in keysList) {
       dynamic object = paramsMap[key];
       if (object == null) continue;
-      paramList.add('$key=$object');
+      if (object is List || object is Map) {
+        paramList.add('$key=${jsonEncode(object)}');
+      } else {
+        paramList.add('$key=$object');
+      }
     }
     String signStr = paramList.join('&');
     return hmacSHA256(signStr, secret);
