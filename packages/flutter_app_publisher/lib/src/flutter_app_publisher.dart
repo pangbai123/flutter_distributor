@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_app_publisher/src/api/app_package_publisher.dart';
 import 'package:flutter_app_publisher/src/publishers/oppo/app_package_publisher_oppo.dart';
 import 'package:flutter_app_publisher/src/publishers/publishers.dart';
+import 'package:flutter_app_publisher/src/publishers/vivo/app_package_publisher_oppo.dart';
 
 class FlutterAppPublisher {
   final List<AppPackagePublisher> _publishers = [
@@ -17,6 +18,7 @@ class FlutterAppPublisher {
     AppPackagePublisherQiniu(),
     AppPackagePublisherVercel(),
     AppPackagePublisherOppo(),
+    AppPackagePublisherVivo(),
   ];
 
   Future<PublishResult> publish(
