@@ -3,14 +3,13 @@ import 'dart:io';
 
 import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
+import 'package:encrypt/encrypt.dart';
 import 'package:encrypt/encrypt_io.dart';
+import 'package:flutter_app_publisher/src/api/app_package_publisher.dart';
 import 'package:flutter_app_publisher/src/publishers/oppo/app_package_publisher_oppo.dart';
 import 'package:http/http.dart' as http;
-import 'package:flutter_app_publisher/src/api/app_package_publisher.dart';
-import 'package:pretty_dio_logger/pretty_dio_logger.dart';
-import 'package:encrypt/encrypt.dart';
-import 'package:pointycastle/export.dart';
 import 'package:pointycastle/asymmetric/api.dart';
+import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 
 const kEnvMiAccount = 'MI_ACCOUNT';
 const kEnvMiCer = 'MI_CER';
@@ -19,6 +18,7 @@ const kEnvAppName = 'APP_NAME';
 const kEnvPrivacyUrl = 'PRIVACY_URL';
 
 ///  doc [https://dev.mi.com/distribute/doc/details?pId=1134]
+///  使用命令转换证书： openssl x509 -pubkey -noout -in dev.api.public.cer  > pubkey.pem
 class AppPackagePublisherMi extends AppPackagePublisher {
   @override
   String get name => 'mi';
@@ -91,25 +91,17 @@ class AppPackagePublisherMi extends AppPackagePublisher {
       ],
       "password": globalEnvironment[kEnvMiPrivateKey]
     };
-    print(File(globalEnvironment[kEnvMiCer]!).readAsStringSync());
     final publicKey =
-        await parseKeyFromFile<RSAPublicKey>(globalEnvironment[kEnvMiCer]!);
-    final privateKey = RSAKeyParser()
-        .parse(globalEnvironment[kEnvMiPrivateKey]!) as RSAPrivateKey;
-    var encrypter = Encrypter(
-      RSA(
-          publicKey: publicKey,
-          privateKey: privateKey,
-          encoding: RSAEncoding.PKCS1),
-    );
-    var encrypted = encrypter.encrypt(jsonEncode(arr));
-
-    request.fields['SIG'] = encrypted.base64;
+        parseKeyFromFileSync<RSAPublicKey>(globalEnvironment[kEnvMiCer]!);
+    var sign = await encodeString(jsonEncode(arr), publicKey);
+    request.fields['SIG'] = sign;
+    // print(sign);
+    // throw PublishError(sign);
     var response = await request.send();
     if (response.statusCode == 200) {
       String content = await response.stream.bytesToString();
       Map responseMap = jsonDecode(content);
-      if (responseMap["code"] == 0) {
+      if (responseMap["result"] == 0) {
         return responseMap;
       } else {
         throw PublishError(content);
@@ -118,5 +110,45 @@ class AppPackagePublisherMi extends AppPackagePublisher {
       // 处理错误的响应
       throw PublishError("请求失败：${response.statusCode}");
     }
+  }
+
+  // Rsa加密最大长度(密钥长度/8-11)
+  int MAX_ENCRYPT_BLOCK = 117;
+
+  //公钥分段加密
+  Future encodeString(String content, RSAPublicKey publicKey) async {
+    //创建加密器
+    final encrypter = Encrypter(RSA(publicKey: publicKey));
+
+    //分段加密
+    // 原始字符串转成字节数组
+    List<int> sourceBytes = utf8.encode(content);
+    //数据长度
+    int inputLength = sourceBytes.length;
+    // 缓存数组
+    List<int> cache = [];
+    // 分段加密 步长为MAX_ENCRYPT_BLOCK
+    for (int i = 0; i < inputLength; i += MAX_ENCRYPT_BLOCK) {
+      //剩余长度
+      int endLen = inputLength - i;
+      List<int> item;
+      if (endLen > MAX_ENCRYPT_BLOCK) {
+        item = sourceBytes.sublist(i, i + MAX_ENCRYPT_BLOCK);
+      } else {
+        item = sourceBytes.sublist(i, i + endLen);
+      }
+      // 加密后对象转换成数组存放到缓存
+      cache.addAll(encrypter.encryptBytes(item).bytes);
+    }
+    return bytesToHex(cache);
+  }
+
+  String bytesToHex(List<int> bytes) {
+    StringBuffer hexStr = StringBuffer();
+    for (int i = 0; i < bytes.length; i++) {
+      String hex = bytes[i].toRadixString(16);
+      hexStr.write('${hex.length == 1 ? '0' + hex : hex}');
+    }
+    return hexStr.toString();
   }
 }
