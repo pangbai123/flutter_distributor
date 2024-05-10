@@ -1,6 +1,8 @@
 import 'dart:io';
 
 import 'package:flutter_app_publisher/src/api/app_package_publisher.dart';
+import 'package:flutter_app_publisher/src/publishers/doorzo/app_package_publisher_doorzo.dart';
+import 'package:flutter_app_publisher/src/publishers/huawei/app_package_publisher_huawei.dart';
 import 'package:flutter_app_publisher/src/publishers/mi/app_package_publisher_mi.dart';
 import 'package:flutter_app_publisher/src/publishers/oppo/app_package_publisher_oppo.dart';
 import 'package:flutter_app_publisher/src/publishers/publishers.dart';
@@ -21,6 +23,8 @@ class FlutterAppPublisher {
     AppPackagePublisherOppo(),
     AppPackagePublisherVivo(),
     AppPackagePublisherMi(),
+    AppPackagePublisherHuawei(),
+    AppPackagePublisherDoorzo(),
   ];
 
   Future<PublishResult> publish(
