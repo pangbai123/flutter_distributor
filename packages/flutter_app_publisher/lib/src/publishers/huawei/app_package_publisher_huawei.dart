@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_app_publisher/src/api/app_package_publisher.dart';
+import 'package:flutter_app_publisher/src/publishers/doorzo/app_package_publisher_doorzo.dart';
 import 'package:flutter_app_publisher/src/publishers/mi/app_package_publisher_mi.dart';
 import 'package:flutter_app_publisher/src/publishers/util.dart';
 import 'package:http/http.dart';
@@ -46,6 +47,8 @@ class AppPackagePublisherHuawei extends AppPackagePublisher {
     await uploadApp(file, onPublishProgress);
     //上传绿色资料
     await uploadGreen();
+    //更新日志
+    await updateDesc();
     //提交审核信息
     await submit();
     return PublishResult(url: globalEnvironment[kEnvAppName]! + name + '提交成功}');
@@ -79,6 +82,53 @@ class AppPackagePublisherHuawei extends AppPackagePublisher {
       if (times == 50) throw PublishError("提交版本：${map}");
       await submit(times: times + 1);
     }
+  }
+
+  Future updateDesc() async {
+    try {
+      var map = await PublishUtil.sendRequest(
+        'https://connect-api.cloud.huawei.com/api/publish/v2/app-info',
+        {},
+        queryParams: {
+          'appId': globalEnvironment[kEnvHuaweiAppId],
+        },
+        header: {
+          'client_id': client,
+          'Authorization': 'Bearer ${token}',
+        },
+        isGet: true,
+        isFrom: false,
+      );
+      if (map?["code"] != 0) {
+        return;
+      }
+      var languageInfoList = map?['languages'];
+      if (languageInfoList == null) return;
+      if (languageInfoList is List) {
+        for (var i = 0; i < languageInfoList.length; ++i) {
+          var o = languageInfoList[i];
+          await PublishUtil.sendRequest(
+            'https://connect-api.cloud.huawei.com/api/publish/v2/app-language-info',
+            {
+              'lang': o['lang'],
+              'appName': o['appName'],
+              'appDesc': o['appDesc'],
+              'briefInfo': o['briefInfo'],
+              'newFeatures': globalEnvironment[kEnvUpdateLog],
+            },
+            queryParams: {
+              'appId': globalEnvironment[kEnvHuaweiAppId],
+            },
+            header: {
+              'client_id': client,
+              'Authorization': 'Bearer ${token}',
+            },
+            isPut: true,
+            isFrom: false,
+          );
+        }
+      }
+    } catch (e) {}
   }
 
   ///上传文件

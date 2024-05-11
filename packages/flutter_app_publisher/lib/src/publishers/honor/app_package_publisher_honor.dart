@@ -43,6 +43,8 @@ class AppPackagePublisherHonor extends AppPackagePublisher {
     }
     token = await getToken(client!, access!);
     await uploadApp(file, onPublishProgress);
+    //更新日志
+    await updateDesc();
     //提交审核信息
     await submit();
     return PublishResult(url: globalEnvironment[kEnvAppName]! + name + '提交成功}');
@@ -150,6 +152,43 @@ class AppPackagePublisherHonor extends AppPackagePublisher {
     } else {
       throw PublishError("更新文件信息失败：${map}");
     }
+  }
+
+  Future updateDesc() async {
+    try {
+      var map = await PublishUtil.sendRequest(
+        'https://appmarket-openapi-drcn.cloud.honor.com/openapi/v1/publish/get-app-detail',
+        {},
+        queryParams: {
+          'appId': globalEnvironment[kEnvHonorAppId],
+        },
+        header: {
+          'Authorization': 'Bearer ${token}',
+        },
+        isGet: true,
+        isFrom: false,
+      );
+      if (map?["code"] != 0) {
+        return;
+      }
+      var languageInfoList = map?['data']['languageInfo'];
+      if (languageInfoList == null) return;
+      (languageInfoList as List).forEach((element) {
+        element['newFeature'] = globalEnvironment[kEnvUpdateLog];
+      });
+      await PublishUtil.sendRequest(
+        'https://appmarket-openapi-drcn.cloud.honor.com/openapi/v1/publish/update-language-info',
+        {'languageInfoList': languageInfoList},
+        queryParams: {
+          'appId': globalEnvironment[kEnvHonorAppId],
+        },
+        header: {
+          'Authorization': 'Bearer ${token}',
+        },
+        isGet: true,
+        isFrom: false,
+      );
+    } catch (e) {}
   }
 
   /// 获取上传 Token 信息
