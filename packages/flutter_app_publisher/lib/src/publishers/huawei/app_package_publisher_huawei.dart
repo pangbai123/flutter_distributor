@@ -79,7 +79,7 @@ class AppPackagePublisherHuawei extends AppPackagePublisher {
       return;
     } else {
       print('重试提交$times');
-      if (times == 50) throw PublishError("提交版本：${map}");
+      if (times == 30) throw PublishError("提交版本：${map}");
       await submit(times: times + 1);
     }
   }
