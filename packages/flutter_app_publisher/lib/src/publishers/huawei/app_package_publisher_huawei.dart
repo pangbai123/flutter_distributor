@@ -7,17 +7,14 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_app_publisher/src/api/app_package_publisher.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 
-const kEnvClientIdApi = 'OPPO_CLIENT_ID';
-const kEnvAccessSecretApi = 'OPPO_ACCESS_SECRET';
-const kEnvPkgName = 'PKG_NAME';
-const kEnvVersionCode = 'VERSION_CODE';
-const kEnvVersionName = 'VERSION_NAME';
-const kEnvUpdateLog = 'UPDATE_LOG';
+const kEnvHuaweiClientId = 'HUAWEI_CLIENT_ID';
+const kEnvHuaweiAcessSecrt = 'HUAWEI_ACESS_SECRET';
+const kEnvHuaweiAppId = 'HUAWEI_APP_ID';
 
 ///  doc [https://developer.huawei.com/consumer/cn/doc/AppGallery-connect-References/agcapi-obtain-token-project-0000001477336048]
 class AppPackagePublisherHuawei extends AppPackagePublisher {
   @override
-  String get name => 'oppo';
+  String get name => 'huawei';
 
   // dio 网络请求实例
   final Dio _dio = Dio(BaseOptions(
@@ -30,6 +27,7 @@ class AppPackagePublisherHuawei extends AppPackagePublisher {
         maxWidth: 600));
   String? token;
   String? access;
+  String? client;
   late Map<String, String> globalEnvironment;
 
   @override
@@ -41,119 +39,119 @@ class AppPackagePublisherHuawei extends AppPackagePublisher {
   }) async {
     globalEnvironment = environment ?? Platform.environment;
     File file = fileSystemEntity as File;
-    var client = globalEnvironment[kEnvClientIdApi];
-    access = globalEnvironment[kEnvAccessSecretApi];
+    client = globalEnvironment[kEnvHuaweiClientId];
+    access = globalEnvironment[kEnvHuaweiAcessSecrt];
     if ((client ?? '').isEmpty) {
-      throw PublishError('Missing `$kEnvClientIdApi` environment variable.');
+      throw PublishError('Missing `$kEnvHuaweiClientId` environment variable.');
     }
     if ((access ?? '').isEmpty) {
       throw PublishError(
-          'Missing `$kEnvAccessSecretApi` environment variable.');
+          'Missing `$kEnvHuaweiAcessSecrt` environment variable.');
     }
     token = await getToken(client!, access!);
-    Map? map = await getUploadAppUrl();
+    Map? map = await getUploadAppUrl(file);
     print('获取上传地址成功：${jsonEncode(map)}');
     if (map == null) {
       throw PublishError('getUploadAppUrl error');
     }
-    String url = map["data"]["upload_url"];
-    String sign = map["data"]["sign"];
-    Map uploadInfo = await uploadApp(url, sign, file, onPublishProgress);
-    print('上传文件成功：${jsonEncode(uploadInfo)}');
-    //获取应用信息
-    Map appInfo = await getAppInfo(globalEnvironment[kEnvPkgName]!);
-    print('获取应用信息成功：${jsonEncode(appInfo)}');
-    //提交审核信息
-    Map submitInfo = await submit(uploadInfo, appInfo);
+    // String url = map["data"]["upload_url"];
+    // String sign = map["data"]["sign"];
+    // Map uploadInfo = await uploadApp(url, sign, file, onPublishProgress);
+    // print('上传文件成功：${jsonEncode(uploadInfo)}');
+    // //获取应用信息
+    // Map appInfo = await getAppInfo(globalEnvironment[kEnvPkgName]!);
+    // print('获取应用信息成功：${jsonEncode(appInfo)}');
+    // //提交审核信息
+    // Map submitInfo = await submit(uploadInfo, appInfo);
     return PublishResult(
-      url: 'oppo提交成功：${jsonEncode(submitInfo)}',
+      url: 'oppo提交成功：${jsonEncode('submitInfo')}',
     );
   }
 
-  Future<Map> submit(Map uploadInfo, Map appInfo) async {
-    Map<String, dynamic> data = appInfo['data'].cast<String, dynamic>();
-    Map<String, dynamic> params = {};
-    params['pkg_name'] = data['pkg_name'];
-    params['version_code'] = globalEnvironment[kEnvVersionCode];
-    params['apk_url'] = [
-      {
-        'url': uploadInfo['data']['url'],
-        'md5': uploadInfo['data']['md5'],
-        'cpu_code': 0,
-      }
-    ];
-    params['app_name'] = data['app_name'];
-    params['app_subname'] = data['app_subname'];
-    params['second_category_id'] = data['second_category_id'];
-    params['third_category_id'] = data['third_category_id'];
-    params['summary'] = data['summary'];
-    params['detail_desc'] = data['detail_desc'];
-    params['update_desc'] = globalEnvironment[kEnvUpdateLog];
-    params['privacy_source_url'] = data['privacy_source_url'];
-    params['icon_url'] = data['icon_url'];
-    params['pic_url'] = data['pic_url'];
-    params['landscape_pic_url'] = data['landscape_pic_url'];
-    params['online_type'] = 1;
-    params['test_desc'] = data['test_desc'];
-    params['electronic_cert_url'] = data['electronic_cert_url'];
-    params['copyright_url'] = data['copyright_url'];
-    params['icp_url'] = data['icp_url'];
-    params['special_url'] = data['special_url'];
-    params['special_file_url'] = data['special_file_url'];
-    params['business_username'] = data['business_username'];
-    params['business_email'] = data['business_email'];
-    params['business_mobile'] = data['business_mobile'];
-    params['age_level'] = data['age_level'];
-    params['adaptive_equipment'] = data['adaptive_equipment'];
-    params['adaptive_type'] = 1;
-
-    params['access_token'] = token!;
-    params['timestamp'] = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-
-    params.removeWhere((key, value) => value == null);
-
-    params = params.map((key, value) {
-      if (value is List || value is Map) {
-        return MapEntry(key, jsonEncode(value));
-      } else {
-        return MapEntry(key, value);
-      }
-    });
-    params['api_sign'] = signRequest(access!, params);
-    String content = await sendRequest(
-        'https://oop-openapi-cn.heytapmobi.com/resource/v1/app/upd', params,
-        isGet: false);
-    if (content.isEmpty) {
-      throw PublishError("请求submit失败：$content");
-    }
-    Map map = jsonDecode(content);
-    if (map["errno"] == 0) {
-      return map;
-    } else {
-      throw PublishError("请求submit失败：$content");
-    }
+  Future<Map?> submit(Map uploadInfo, Map appInfo) async {
+    // Map<String, dynamic> data = appInfo['data'].cast<String, dynamic>();
+    // Map<String, dynamic> params = {};
+    // params['pkg_name'] = data['pkg_name'];
+    // params['version_code'] = globalEnvironment[kEnvVersionCode];
+    // params['apk_url'] = [
+    //   {
+    //     'url': uploadInfo['data']['url'],
+    //     'md5': uploadInfo['data']['md5'],
+    //     'cpu_code': 0,
+    //   }
+    // ];
+    // params['app_name'] = data['app_name'];
+    // params['app_subname'] = data['app_subname'];
+    // params['second_category_id'] = data['second_category_id'];
+    // params['third_category_id'] = data['third_category_id'];
+    // params['summary'] = data['summary'];
+    // params['detail_desc'] = data['detail_desc'];
+    // params['update_desc'] = globalEnvironment[kEnvUpdateLog];
+    // params['privacy_source_url'] = data['privacy_source_url'];
+    // params['icon_url'] = data['icon_url'];
+    // params['pic_url'] = data['pic_url'];
+    // params['landscape_pic_url'] = data['landscape_pic_url'];
+    // params['online_type'] = 1;
+    // params['test_desc'] = data['test_desc'];
+    // params['electronic_cert_url'] = data['electronic_cert_url'];
+    // params['copyright_url'] = data['copyright_url'];
+    // params['icp_url'] = data['icp_url'];
+    // params['special_url'] = data['special_url'];
+    // params['special_file_url'] = data['special_file_url'];
+    // params['business_username'] = data['business_username'];
+    // params['business_email'] = data['business_email'];
+    // params['business_mobile'] = data['business_mobile'];
+    // params['age_level'] = data['age_level'];
+    // params['adaptive_equipment'] = data['adaptive_equipment'];
+    // params['adaptive_type'] = 1;
+    //
+    // params['access_token'] = token!;
+    // params['timestamp'] = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    //
+    // params.removeWhere((key, value) => value == null);
+    //
+    // params = params.map((key, value) {
+    //   if (value is List || value is Map) {
+    //     return MapEntry(key, jsonEncode(value));
+    //   } else {
+    //     return MapEntry(key, value);
+    //   }
+    // });
+    // params['api_sign'] = signRequest(access!, params);
+    // String content = await sendRequest(
+    //     'https://oop-openapi-cn.heytapmobi.com/resource/v1/app/upd', params,
+    //     isGet: false);
+    // if (content.isEmpty) {
+    //   throw PublishError("请求submit失败：$content");
+    // }
+    // Map map = jsonDecode(content);
+    // if (map["errno"] == 0) {
+    //   return map;
+    // } else {
+    //   throw PublishError("请求submit失败：$content");
+    // }
   }
 
   ///获取信息
-  Future<Map> getAppInfo(String pkg_name) async {
-    Map<String, dynamic> params = {
-      'access_token': token!,
-      'timestamp': DateTime.now().millisecondsSinceEpoch ~/ 1000,
-      'pkg_name': pkg_name,
-    };
-    String sign = signRequest(access!, params);
-    params['api_sign'] = sign;
-    String content = await sendRequest(
-        'https://oop-openapi-cn.heytapmobi.com/resource/v1/app/info', params);
-    if (content.isEmpty) {
-      throw PublishError("请求getAppInfo失败：$content");
-    }
-    Map map = jsonDecode(content);
-    if (map["errno"] == 0) {
-      return map;
-    } else {
-      throw PublishError("请求getAppInfo失败：$content");
-    }
+  Future<Map?> getAppInfo(String pkg_name) async {
+    // Map<String, dynamic> params = {
+    //   'access_token': token!,
+    //   'timestamp': DateTime.now().millisecondsSinceEpoch ~/ 1000,
+    //   'pkg_name': pkg_name,
+    // };
+    // String sign = signRequest(access!, params);
+    // params['api_sign'] = sign;
+    // String content = await sendRequest(
+    //     'https://oop-openapi-cn.heytapmobi.com/resource/v1/app/info', params);
+    // if (content.isEmpty) {
+    //   throw PublishError("请求getAppInfo失败：$content");
+    // }
+    // Map map = jsonDecode(content);
+    // if (map["errno"] == 0) {
+    //   return map;
+    // } else {
+    //   throw PublishError("请求getAppInfo失败：$content");
+    // }
   }
 
   ///上传文件
@@ -185,58 +183,61 @@ class AppPackagePublisherHuawei extends AppPackagePublisher {
     }
   }
 
-  Future<Map?> getUploadAppUrl() async {
-    Map<String, dynamic> params = {
-      'access_token': token,
-      'timestamp': DateTime.now().millisecondsSinceEpoch ~/ 1000,
-    };
-    String sign = signRequest(access!, params);
-    params['api_sign'] = sign;
-    String content = await sendRequest(
-        'https://oop-openapi-cn.heytapmobi.com/resource/v1/upload/get-upload-url',
-        params);
-    if (content.isEmpty) {
-      throw PublishError("请求getUploadAppUrl失败：$content");
+  Future<Map?> getUploadAppUrl(File file) async {
+    Response response = await sendRequest(
+        'https://connect-api.cloud.huawei.com/api/publish/v2/upload-url/for-obs',
+        {
+          'appId': globalEnvironment[kEnvHuaweiAppId],
+          'fileName': file.path,
+          'contentLength': await file.length(),
+        },
+        header: {
+          'client_id': client,
+          'Authorization': 'Authorization: Bearer ${token}',
+        },
+        isGet: false);
+    if (response.data == null) {
+      throw PublishError("请求getUploadAppUrl失败：${response.data}");
     }
-    Map map = jsonDecode(content);
-    if (map["errno"] == 0) {
-      return map;
+    Map map = jsonDecode(response.data);
+    if (map["ret"]['code'] == 0) {
+      return map['urlInfo'];
     } else {
-      throw PublishError("请求getUploadAppUrl失败：$content");
+      throw PublishError("请求getUploadAppUrl失败：${response.data}");
     }
   }
 
   /// 获取上传 Token 信息
-  /// [apiKey] apiKey
-  /// [filePath] 文件路径
   Future<String> getToken(String client, String secret) async {
-    try {
-      Response response = await _dio.get(
-        'https://oop-openapi-cn.heytapmobi.com/developer/v1/token',
-        queryParameters: {
+    Response response = await sendRequest(
+        'https://connect-api.cloud.huawei.com/api/oauth2/v1/token',
+        {
+          'grant_type': 'client_credentials',
           'client_id': client,
           'client_secret': secret,
         },
-      );
-      if (response.data?['data']?['access_token'] == null) {
-        throw PublishError('getToken error: ${response.data}');
-      }
-      return response.data['data']['access_token'];
-    } catch (e) {
-      throw PublishError(e.toString());
+        isGet: false);
+    if (response.data?['access_token'] == null) {
+      throw PublishError('getToken error: ${response.data}');
     }
+    return response.data['access_token'];
   }
 
-  Future<String> sendRequest(String requestUrl, Map<String, dynamic> params,
-      {Map<String, dynamic>? queryParams, bool isGet = true}) async {
-    Response<String> response;
+  Future<Response> sendRequest(String requestUrl, Map<String, dynamic> params,
+      {Map<String, dynamic>? header,
+      Map<String, dynamic>? queryParams,
+      bool isGet = true}) async {
+    Response response;
     try {
       if (isGet) {
-        response = await _dio.get<String>(requestUrl, queryParameters: params);
+        response = await _dio.get<String>(requestUrl,
+            queryParameters: params, options: Options()..headers = header);
       } else {
-        _dio.options.contentType = Headers.formUrlEncodedContentType;
+
         response = await _dio.post<String>(requestUrl,
-            data: params, queryParameters: queryParams);
+            data: params,
+            queryParameters: queryParams,
+            options: Options()..headers = header);
       }
     } catch (e) {
       if (e is DioException) {
@@ -247,30 +248,6 @@ class AppPackagePublisherHuawei extends AppPackagePublisher {
     if ((response.statusCode ?? 0) >= 400) {
       throw Exception('${response.statusCode} ${response.data}');
     }
-    return response.data ?? '';
-  }
-
-  String signRequest(String secret, Map<String, dynamic> paramsMap) {
-    List<String> keysList = paramsMap.keys.toList()..sort();
-    List<String> paramList = [];
-    for (String key in keysList) {
-      dynamic object = paramsMap[key];
-      if (object == null) continue;
-      if (object is List || object is Map) {
-        paramList.add('$key=${jsonEncode(object)}');
-      } else {
-        paramList.add('$key=$object');
-      }
-    }
-    String signStr = paramList.join('&');
-    return hmacSHA256(signStr, secret);
-  }
-
-  String hmacSHA256(String data, String key) {
-    List<int> secretByte = utf8.encode(key);
-    var hmacSha256 = Hmac(sha256, secretByte);
-    List<int> dataByte = utf8.encode(data);
-    Digest digest = hmacSha256.convert(dataByte);
-    return digest.toString();
+    return response;
   }
 }

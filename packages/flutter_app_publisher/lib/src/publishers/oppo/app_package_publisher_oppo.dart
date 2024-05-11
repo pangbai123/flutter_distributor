@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter_app_publisher/src/publishers/util.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_app_publisher/src/api/app_package_publisher.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
@@ -119,18 +120,14 @@ class AppPackagePublisherOppo extends AppPackagePublisher {
         return MapEntry(key, value);
       }
     });
-    params['api_sign'] = signRequest(access!, params);
-    String content = await sendRequest(
+    params['api_sign'] = PublishUtil.oppoSign(access!, params);
+    var map = await PublishUtil.sendRequest(
         'https://oop-openapi-cn.heytapmobi.com/resource/v1/app/upd', params,
         isGet: false);
-    if (content.isEmpty) {
-      throw PublishError("请求submit失败：$content");
-    }
-    Map map = jsonDecode(content);
-    if (map["errno"] == 0) {
-      return map;
+    if (map?["errno"] == 0) {
+      return map!;
     } else {
-      throw PublishError("请求submit失败：$content");
+      throw PublishError("请求submit失败：");
     }
   }
 
@@ -141,18 +138,13 @@ class AppPackagePublisherOppo extends AppPackagePublisher {
       'timestamp': DateTime.now().millisecondsSinceEpoch ~/ 1000,
       'pkg_name': pkg_name,
     };
-    String sign = signRequest(access!, params);
-    params['api_sign'] = sign;
-    String content = await sendRequest(
+    params['api_sign']  = PublishUtil.oppoSign(access!, params);
+    var map = await PublishUtil.sendRequest(
         'https://oop-openapi-cn.heytapmobi.com/resource/v1/app/info', params);
-    if (content.isEmpty) {
-      throw PublishError("请求getAppInfo失败：$content");
-    }
-    Map map = jsonDecode(content);
-    if (map["errno"] == 0) {
-      return map;
+    if (map?["errno"] == 0) {
+      return map!;
     } else {
-      throw PublishError("请求getAppInfo失败：$content");
+      throw PublishError("请求getAppInfo失败：");
     }
   }
 
@@ -190,19 +182,15 @@ class AppPackagePublisherOppo extends AppPackagePublisher {
       'access_token': token,
       'timestamp': DateTime.now().millisecondsSinceEpoch ~/ 1000,
     };
-    String sign = signRequest(access!, params);
+    String sign = PublishUtil.oppoSign(access!, params);
     params['api_sign'] = sign;
-    String content = await sendRequest(
+    var map = await PublishUtil.sendRequest(
         'https://oop-openapi-cn.heytapmobi.com/resource/v1/upload/get-upload-url',
         params);
-    if (content.isEmpty) {
-      throw PublishError("请求getUploadAppUrl失败：$content");
-    }
-    Map map = jsonDecode(content);
-    if (map["errno"] == 0) {
+    if (map?["errno"] == 0) {
       return map;
     } else {
-      throw PublishError("请求getUploadAppUrl失败：$content");
+      throw PublishError("请求getUploadAppUrl失败");
     }
   }
 
@@ -210,67 +198,17 @@ class AppPackagePublisherOppo extends AppPackagePublisher {
   /// [apiKey] apiKey
   /// [filePath] 文件路径
   Future<String> getToken(String client, String secret) async {
-    try {
-      Response response = await _dio.get(
-        'https://oop-openapi-cn.heytapmobi.com/developer/v1/token',
-        queryParameters: {
-          'client_id': client,
-          'client_secret': secret,
-        },
-      );
-      if (response.data?['data']?['access_token'] == null) {
-        throw PublishError('getToken error: ${response.data}');
-      }
-      return response.data['data']['access_token'];
-    } catch (e) {
-      throw PublishError(e.toString());
+    Response response = await _dio.get(
+      'https://oop-openapi-cn.heytapmobi.com/developer/v1/token',
+      queryParameters: {
+        'client_id': client,
+        'client_secret': secret,
+      },
+    );
+    if (response.data?['data']?['access_token'] == null) {
+      throw PublishError('getToken error: ${response.data}');
     }
+    return response.data['data']['access_token'];
   }
 
-  Future<String> sendRequest(String requestUrl, Map<String, dynamic> params,
-      {Map<String, dynamic>? queryParams, bool isGet = true}) async {
-    Response<String> response;
-    try {
-      if (isGet) {
-        response = await _dio.get<String>(requestUrl, queryParameters: params);
-      } else {
-        _dio.options.contentType = Headers.formUrlEncodedContentType;
-        response = await _dio.post<String>(requestUrl,
-            data: params, queryParameters: queryParams);
-      }
-    } catch (e) {
-      if (e is DioException) {
-        throw Exception('${e.type} ${e.message}');
-      }
-      throw Exception('${e.toString()} ');
-    }
-    if ((response.statusCode ?? 0) >= 400) {
-      throw Exception('${response.statusCode} ${response.data}');
-    }
-    return response.data ?? '';
-  }
-
-  String signRequest(String secret, Map<String, dynamic> paramsMap) {
-    List<String> keysList = paramsMap.keys.toList()..sort();
-    List<String> paramList = [];
-    for (String key in keysList) {
-      dynamic object = paramsMap[key];
-      if (object == null) continue;
-      if (object is List || object is Map) {
-        paramList.add('$key=${jsonEncode(object)}');
-      } else {
-        paramList.add('$key=$object');
-      }
-    }
-    String signStr = paramList.join('&');
-    return hmacSHA256(signStr, secret);
-  }
-
-  String hmacSHA256(String data, String key) {
-    List<int> secretByte = utf8.encode(key);
-    var hmacSha256 = Hmac(sha256, secretByte);
-    List<int> dataByte = utf8.encode(data);
-    Digest digest = hmacSha256.convert(dataByte);
-    return digest.toString();
-  }
 }

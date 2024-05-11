@@ -2,14 +2,13 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
-import 'package:dio/dio.dart';
 import 'package:encrypt/encrypt.dart';
 import 'package:encrypt/encrypt_io.dart';
 import 'package:flutter_app_publisher/src/api/app_package_publisher.dart';
 import 'package:flutter_app_publisher/src/publishers/oppo/app_package_publisher_oppo.dart';
+import 'package:flutter_app_publisher/src/publishers/util.dart';
 import 'package:http/http.dart' as http;
 import 'package:pointycastle/asymmetric/api.dart';
-import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 
 const kEnvMiAccount = 'MI_ACCOUNT';
 const kEnvMiCer = 'MI_CER';
@@ -23,15 +22,6 @@ class AppPackagePublisherMi extends AppPackagePublisher {
   @override
   String get name => 'mi';
 
-  // dio 网络请求实例
-  final Dio _dio = Dio(BaseOptions(
-      connectTimeout: Duration(seconds: 15),
-      receiveTimeout: Duration(seconds: 60)))
-    ..interceptors.add(PrettyDioLogger(
-        requestHeader: true,
-        requestBody: true,
-        responseHeader: true,
-        maxWidth: 600));
   late Map<String, String> globalEnvironment;
 
   @override
@@ -140,15 +130,6 @@ class AppPackagePublisherMi extends AppPackagePublisher {
       // 加密后对象转换成数组存放到缓存
       cache.addAll(encrypter.encryptBytes(item).bytes);
     }
-    return bytesToHex(cache);
-  }
-
-  String bytesToHex(List<int> bytes) {
-    StringBuffer hexStr = StringBuffer();
-    for (int i = 0; i < bytes.length; i++) {
-      String hex = bytes[i].toRadixString(16);
-      hexStr.write('${hex.length == 1 ? '0' + hex : hex}');
-    }
-    return hexStr.toString();
+    return PublishUtil.bytesToHex(cache);
   }
 }

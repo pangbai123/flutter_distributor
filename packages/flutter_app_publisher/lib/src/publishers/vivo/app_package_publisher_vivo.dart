@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_app_publisher/src/publishers/oppo/app_package_publisher_oppo.dart';
+import 'package:flutter_app_publisher/src/publishers/util.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_app_publisher/src/api/app_package_publisher.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
@@ -74,18 +75,16 @@ class AppPackagePublisherVivo extends AppPackagePublisher {
     params['target_app_key'] = 'developer';
 
     params.removeWhere((key, value) => value == null);
-    params['sign'] = signRequest(access!, params);
-    String content = await sendRequest(
-        'https://developer-api.vivo.com.cn/router/rest', params,
-        isGet: false);
-    if (content.isEmpty) {
-      throw PublishError("请求submit失败：$content");
-    }
-    Map map = jsonDecode(content);
-    if (map["code"] == 0) {
-      return map;
+    params['sign'] = PublishUtil.oppoSign(access!, params);
+    var map = await PublishUtil.sendRequest(
+      'https://developer-api.vivo.com.cn/router/rest',
+      params,
+      isGet: false,
+    );
+    if (map?["code"] == 0) {
+      return map!;
     } else {
-      throw PublishError("请求submit失败：$content");
+      throw PublishError("请求submit失败");
     }
   }
 
@@ -109,7 +108,7 @@ class AppPackagePublisherVivo extends AppPackagePublisher {
     var fileMd5 = md5.convert(file.readAsBytesSync()).toString();
     request.fields['fileMd5'] = fileMd5;
     request.files.add(await http.MultipartFile.fromPath('file', file.path));
-    request.fields['sign'] = signRequest(access!, request.fields);
+    request.fields['sign'] = PublishUtil.oppoSign(access!, request.fields);
     var response = await request.send();
     if (response.statusCode == 200) {
       String content = await response.stream.bytesToString();
@@ -123,52 +122,5 @@ class AppPackagePublisherVivo extends AppPackagePublisher {
       // 处理错误的响应
       throw PublishError("请求失败：${response.statusCode}");
     }
-  }
-
-  Future<String> sendRequest(String requestUrl, Map<String, dynamic> params,
-      {Map<String, dynamic>? queryParams, bool isGet = true}) async {
-    Response<String> response;
-    try {
-      if (isGet) {
-        response = await _dio.get<String>(requestUrl, queryParameters: params);
-      } else {
-        _dio.options.contentType = Headers.formUrlEncodedContentType;
-        response = await _dio.post<String>(requestUrl,
-            data: params, queryParameters: queryParams);
-      }
-    } catch (e) {
-      if (e is DioException) {
-        throw Exception('${e.type} ${e.message}');
-      }
-      throw Exception('${e.toString()} ');
-    }
-    if ((response.statusCode ?? 0) >= 400) {
-      throw Exception('${response.statusCode} ${response.data}');
-    }
-    return response.data ?? '';
-  }
-
-  String signRequest(String secret, Map<String, dynamic> paramsMap) {
-    List<String> keysList = paramsMap.keys.toList()..sort();
-    List<String> paramList = [];
-    for (String key in keysList) {
-      dynamic object = paramsMap[key];
-      if (object == null) continue;
-      if (object is List || object is Map) {
-        paramList.add('$key=${jsonEncode(object)}');
-      } else {
-        paramList.add('$key=$object');
-      }
-    }
-    String signStr = paramList.join('&');
-    return hmacSHA256(signStr, secret);
-  }
-
-  String hmacSHA256(String data, String key) {
-    List<int> secretByte = utf8.encode(key);
-    var hmacSha256 = Hmac(sha256, secretByte);
-    List<int> dataByte = utf8.encode(data);
-    Digest digest = hmacSha256.convert(dataByte);
-    return digest.toString();
   }
 }
