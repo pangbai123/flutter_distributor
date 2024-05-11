@@ -25,18 +25,24 @@ class PublishUtil {
     Map<String, dynamic>? queryParams,
     bool isGet = true,
     bool isFrom = true,
+    bool isPut = false,
   }) async {
     Response response;
+    if (isFrom) {
+      _dio.options.contentType = Headers.formUrlEncodedContentType;
+    } else {
+      _dio.options.contentType = Headers.jsonContentType;
+    }
     try {
       if (isGet) {
         response = await _dio.get<String>(requestUrl,
             queryParameters: params, options: Options()..headers = header);
+      } else if (isPut) {
+        response = await _dio.put<String>(requestUrl,
+            data: params,
+            queryParameters: queryParams,
+            options: Options()..headers = header);
       } else {
-        if (isFrom) {
-          _dio.options.contentType = Headers.formUrlEncodedContentType;
-        } else {
-          _dio.options.contentType = Headers.jsonContentType;
-        }
         response = await _dio.post<String>(requestUrl,
             data: params,
             queryParameters: queryParams,
