@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter_app_publisher/src/publishers/mi/app_package_publisher_mi.dart';
 import 'package:flutter_app_publisher/src/publishers/oppo/app_package_publisher_oppo.dart';
 import 'package:flutter_app_publisher/src/publishers/util.dart';
 import 'package:http/http.dart' as http;
@@ -52,9 +53,7 @@ class AppPackagePublisherVivo extends AppPackagePublisher {
     print('上传文件成功：${jsonEncode(uploadInfo)}');
     // //提交审核信息
     Map submitInfo = await submit(uploadInfo, {});
-    return PublishResult(
-      url: 'vivo提交成功：${jsonEncode(submitInfo)}',
-    );
+    return PublishResult(url: globalEnvironment[kEnvAppName]! + name + '提交成功}');
   }
 
   Future<Map> submit(Map uploadInfo, Map appInfo) async {

@@ -35,9 +35,7 @@ class AppPackagePublisherMi extends AppPackagePublisher {
     File file = fileSystemEntity as File;
     Map uploadInfo = await uploadApp(
         globalEnvironment[kEnvPkgName]!, file, onPublishProgress);
-    return PublishResult(
-      url: 'mi提交成功：${jsonEncode(uploadInfo)}',
-    );
+    return PublishResult(url: globalEnvironment[kEnvAppName]! + name + '提交成功}');
   }
 
   ///上传文件

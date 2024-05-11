@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter_app_publisher/src/publishers/mi/app_package_publisher_mi.dart';
 import 'package:flutter_app_publisher/src/publishers/util.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_app_publisher/src/api/app_package_publisher.dart';
@@ -66,9 +67,7 @@ class AppPackagePublisherOppo extends AppPackagePublisher {
     print('获取应用信息成功：${jsonEncode(appInfo)}');
     //提交审核信息
     Map submitInfo = await submit(uploadInfo, appInfo);
-    return PublishResult(
-      url: 'oppo提交成功：${jsonEncode(submitInfo)}',
-    );
+    return PublishResult(url: globalEnvironment[kEnvAppName]! + name + '提交成功}');
   }
 
   Future<Map> submit(Map uploadInfo, Map appInfo) async {
@@ -138,7 +137,7 @@ class AppPackagePublisherOppo extends AppPackagePublisher {
       'timestamp': DateTime.now().millisecondsSinceEpoch ~/ 1000,
       'pkg_name': pkg_name,
     };
-    params['api_sign']  = PublishUtil.oppoSign(access!, params);
+    params['api_sign'] = PublishUtil.oppoSign(access!, params);
     var map = await PublishUtil.sendRequest(
         'https://oop-openapi-cn.heytapmobi.com/resource/v1/app/info', params);
     if (map?["errno"] == 0) {
@@ -210,5 +209,4 @@ class AppPackagePublisherOppo extends AppPackagePublisher {
     }
     return response.data['data']['access_token'];
   }
-
 }

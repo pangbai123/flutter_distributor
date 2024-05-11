@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter_app_publisher/src/publishers/mi/app_package_publisher_mi.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_app_publisher/src/api/app_package_publisher.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
@@ -65,9 +66,7 @@ class AppPackagePublisherDoorzo extends AppPackagePublisher {
     print('获取应用信息成功：${jsonEncode(appInfo)}');
     //提交审核信息
     Map submitInfo = await submit(uploadInfo, appInfo);
-    return PublishResult(
-      url: 'oppo提交成功：${jsonEncode(submitInfo)}',
-    );
+    return PublishResult(url: globalEnvironment[kEnvAppName]! + name + '提交成功}');
   }
 
   Future<Map> submit(Map uploadInfo, Map appInfo) async {
