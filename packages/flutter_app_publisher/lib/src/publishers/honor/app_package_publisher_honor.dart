@@ -55,7 +55,7 @@ class AppPackagePublisherHonor extends AppPackagePublisher {
     var map = await PublishUtil.sendRequest(
       'https://appmarket-openapi-drcn.cloud.honor.com/openapi/v1/publish/submit-audit',
       {
-        'testComment': '账号：nervzztc@hotmail.com\n密码：123456',
+        'testComment': '账号：nervzztc@hotmail.com\n密码：123456 \n 您好，由于通过api传包，测试账号会乱码，所以改为备注。',
         'releaseType': 1,
       },
       queryParams: {
