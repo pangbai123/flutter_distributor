@@ -55,8 +55,7 @@ class AppPackagePublisherHonor extends AppPackagePublisher {
     var map = await PublishUtil.sendRequest(
       'https://appmarket-openapi-drcn.cloud.honor.com/openapi/v1/publish/submit-audit',
       {
-        'testAccount': 'nervzztc@hotmail.com',
-        'testPassword': '123456',
+        'testComment': '账号：nervzztc@hotmail.com\n密码：123456',
         'releaseType': 1,
       },
       queryParams: {
@@ -72,7 +71,7 @@ class AppPackagePublisherHonor extends AppPackagePublisher {
       return;
     } else {
       print('重试提交$times');
-      if (times == 50) throw PublishError("提交版本：${map}");
+      if (times == 10) throw PublishError("提交版本：${map}");
       await submit(times: times + 1);
     }
   }
@@ -87,16 +86,14 @@ class AppPackagePublisherHonor extends AppPackagePublisher {
     String sha256Hash = sha256Result.toString();
     var map = await PublishUtil.sendRequest(
       'https://appmarket-openapi-drcn.cloud.honor.com/openapi/v1/publish/get-file-upload-url',
-      {
-        'uploadFileList': [
-          {
-            'fileName': file.path.split('/').last,
-            'fileType': 100,
-            'fileSize': await file.length(),
-            'fileSha256': sha256Hash,
-          }
-        ],
-      },
+      [
+        {
+          'fileName': file.path.split('/').last,
+          'fileType': 100,
+          'fileSize': await file.length(),
+          'fileSha256': sha256Hash,
+        }
+      ],
       queryParams: {
         'appId': globalEnvironment[kEnvHonorAppId],
       },

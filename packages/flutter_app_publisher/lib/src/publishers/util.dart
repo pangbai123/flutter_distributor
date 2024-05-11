@@ -20,7 +20,7 @@ class PublishUtil {
 
   static Future<Map?> sendRequest(
     String requestUrl,
-    Map<String, dynamic> params, {
+    dynamic params, {
     Map<String, dynamic>? header,
     Map<String, dynamic>? queryParams,
     bool isGet = true,
