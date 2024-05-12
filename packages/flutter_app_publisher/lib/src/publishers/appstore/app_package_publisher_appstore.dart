@@ -5,6 +5,7 @@ import 'package:flutter_app_publisher/src/publishers/appstore/publish_appstore_c
 import 'package:shell_executor/shell_executor.dart';
 
 /// AppStore doc [https://help.apple.com/asc/appsaltool/]
+/// AppStore doc [https://developer.apple.com/documentation/appstoreconnectapi?changes=latest_minor]
 class AppPackagePublisherAppStore extends AppPackagePublisher {
   @override
   String get name => 'appstore';

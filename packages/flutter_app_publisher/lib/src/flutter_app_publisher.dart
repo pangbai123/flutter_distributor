@@ -7,26 +7,21 @@ import 'package:flutter_app_publisher/src/publishers/huawei/app_package_publishe
 import 'package:flutter_app_publisher/src/publishers/mi/app_package_publisher_mi.dart';
 import 'package:flutter_app_publisher/src/publishers/oppo/app_package_publisher_oppo.dart';
 import 'package:flutter_app_publisher/src/publishers/publishers.dart';
+import 'package:flutter_app_publisher/src/publishers/samsung/app_package_publisher_samsung.dart';
 import 'package:flutter_app_publisher/src/publishers/vivo/app_package_publisher_vivo.dart';
 
 class FlutterAppPublisher {
   final List<AppPackagePublisher> _publishers = [
-    AppPackagePublisherAppCenter(),
     AppPackagePublisherAppStore(),
-    AppPackagePublisherFir(),
-    AppPackagePublisherFirebase(),
-    AppPackagePublisherFirebaseHosting(),
-    AppPackagePublisherGithub(),
     AppPackagePublisherPgyer(),
     AppPackagePublisherPlayStore(),
-    AppPackagePublisherQiniu(),
-    AppPackagePublisherVercel(),
     AppPackagePublisherOppo(),
     AppPackagePublisherVivo(),
     AppPackagePublisherMi(),
     AppPackagePublisherHuawei(),
     AppPackagePublisherHonor(),
     AppPackagePublisherDoorzo(),
+    AppPackagePublisherSamsung(),
   ];
 
   Future<PublishResult> publish(

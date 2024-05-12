@@ -6,6 +6,7 @@ import 'package:flutter_app_publisher/src/publishers/playstore/publish_playstore
 import 'package:googleapis/androidpublisher/v3.dart';
 import 'package:googleapis_auth/auth_io.dart';
 
+//https://developers.google.cn/android-publisher?hl=zh-cn
 class AppPackagePublisherPlayStore extends AppPackagePublisher {
   @override
   String get name => 'playstore';
