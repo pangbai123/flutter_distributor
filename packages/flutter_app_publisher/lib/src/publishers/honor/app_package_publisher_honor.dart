@@ -5,6 +5,7 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter_app_publisher/src/api/app_package_publisher.dart';
 import 'package:flutter_app_publisher/src/publishers/doorzo/app_package_publisher_doorzo.dart';
 import 'package:flutter_app_publisher/src/publishers/mi/app_package_publisher_mi.dart';
+import 'package:flutter_app_publisher/src/publishers/oppo/app_package_publisher_oppo.dart';
 import 'package:flutter_app_publisher/src/publishers/util.dart';
 import 'package:http/http.dart';
 

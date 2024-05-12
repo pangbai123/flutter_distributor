@@ -214,6 +214,14 @@ packages:
       relative: true
     source: path
     version: "0.4.0"
+  flutter_oss_aliyun:
+    dependency: transitive
+    description:
+      name: flutter_oss_aliyun
+      sha256: "8280c1e8dfb792dec6449d1e6052e1d3492b3b3a1dfee456cc41d3f31b4cbc26"
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "6.4.2"
   frontend_server_client:
     dependency: transitive
     description:

@@ -14,6 +14,7 @@ const kEnvAccessSecretApi = 'OPPO_ACCESS_SECRET';
 const kEnvPkgName = 'PKG_NAME';
 const kEnvVersionCode = 'VERSION_CODE';
 const kEnvVersionName = 'VERSION_NAME';
+const kEnvModuleName = 'MODULE_NAME';
 const kEnvUpdateLog = 'UPDATE_LOG';
 
 ///  doc [https://open.oppomobile.com/new/developmentDoc/info?id=10998]

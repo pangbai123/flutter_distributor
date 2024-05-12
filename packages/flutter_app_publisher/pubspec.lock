@@ -129,6 +129,14 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "7.0.0"
+  flutter_oss_aliyun:
+    dependency: "direct main"
+    description:
+      name: flutter_oss_aliyun
+      sha256: "8280c1e8dfb792dec6449d1e6052e1d3492b3b3a1dfee456cc41d3f31b4cbc26"
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "6.4.2"
   glob:
     dependency: transitive
     description:
@@ -217,6 +225,14 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "1.15.0"
+  mime:
+    dependency: transitive
+    description:
+      name: mime
+      sha256: "2e123074287cc9fd6c09de8336dae606d1ddb88d9ac47358826db698c176a1f2"
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "1.0.5"
   package_config:
     dependency: transitive
     description:
