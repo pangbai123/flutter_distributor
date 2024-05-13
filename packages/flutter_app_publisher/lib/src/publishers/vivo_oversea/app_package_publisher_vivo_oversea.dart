@@ -10,13 +10,13 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_app_publisher/src/api/app_package_publisher.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 
-const kEnvVivoKey = 'VIVO_ACCESS_KEY';
-const kEnvVivoSecret = 'VIVO_ACCESS_SECRET';
+const kEnvVivoOverseaKey = 'VIVO_OVERSEA_ACCESS_KEY';
+const kEnvVivoOverseaSecret = 'VIVO_OVERSEA_ACCESS_SECRET';
 
-///  doc [https://dev.vivo.com.cn/documentCenter/doc/326]
-class AppPackagePublisherVivo extends AppPackagePublisher {
+///  doc [https://developer.vivo.com/doc/detail?id=95]
+class AppPackagePublisherVivoOversea extends AppPackagePublisher {
   @override
-  String get name => 'vivo';
+  String get name => 'vivo_oversea';
 
   String? client;
   String? access;
@@ -31,43 +31,67 @@ class AppPackagePublisherVivo extends AppPackagePublisher {
   }) async {
     globalEnvironment = environment ?? Platform.environment;
     File file = fileSystemEntity as File;
-    client = globalEnvironment[kEnvVivoKey];
-    access = globalEnvironment[kEnvVivoSecret];
+    client = globalEnvironment[kEnvVivoOverseaKey];
+    access = globalEnvironment[kEnvVivoOverseaSecret];
     if ((client ?? '').isEmpty) {
-      throw PublishError('Missing `$kEnvVivoKey` environment variable.');
+      throw PublishError('Missing `$kEnvVivoOverseaKey` environment variable.');
     }
     if ((access ?? '').isEmpty) {
-      throw PublishError('Missing `$kEnvVivoSecret` environment variable.');
+      throw PublishError(
+          'Missing `$kEnvVivoOverseaSecret` environment variable.');
     }
     Map uploadInfo = await uploadApp(
         globalEnvironment[kEnvPkgName]!, file, onPublishProgress);
     print('上传文件成功：${jsonEncode(uploadInfo)}');
     // //提交审核信息
-    Map submitInfo = await submit(uploadInfo, {});
+    await updateInfo(uploadInfo);
+    await submit();
     return PublishResult(url: globalEnvironment[kEnvAppName]! + name + '提交成功}');
   }
 
-  Future<Map> submit(Map uploadInfo, Map appInfo) async {
+  Future updateInfo(Map uploadInfo) async {
     Map<String, dynamic> params = {};
     params['packageName'] = globalEnvironment[kEnvPkgName];
-    params['versionCode'] = globalEnvironment[kEnvVersionCode];
     params['apk'] = uploadInfo['data']['serialnumber'];
-    params['fileMd5'] = uploadInfo['data']['fileMd5'];
-    params['onlineType'] = 1;
-    params['updateDesc'] = globalEnvironment[kEnvUpdateLog];
 
-    params['method'] = 'app.sync.update.app';
+    params['method'] = 'app.update.basic.info';
     params['access_key'] = client!;
     params['format'] = 'json';
     params['timestamp'] = (DateTime.now().millisecondsSinceEpoch).toString();
-    params['v'] = '1.0';
-    params['sign_method'] = 'hmac';
+    params['version'] = '1.0';
+    params['sign_method'] = 'hmac-sha256';
     params['target_app_key'] = 'developer';
 
     params.removeWhere((key, value) => value == null);
     params['sign'] = PublishUtil.oppoSign(access!, params);
     var map = await PublishUtil.sendRequest(
-      'https://developer-api.vivo.com.cn/router/rest',
+      'https://developer-api.vivo.com/router/rest',
+      params,
+      isGet: false,
+    );
+    if (map?["code"] == 0) {
+    } else {
+      throw PublishError("请求submit失败");
+    }
+  }
+
+  Future<Map> submit() async {
+    Map<String, dynamic> params = {};
+    params['packageName'] = globalEnvironment[kEnvPkgName];
+    params['onlineType'] = 1;
+
+    params['method'] = 'app.update.submit';
+    params['access_key'] = client!;
+    params['format'] = 'json';
+    params['timestamp'] = (DateTime.now().millisecondsSinceEpoch).toString();
+    params['version'] = '1.0';
+    params['sign_method'] = 'hmac-sha256';
+    params['target_app_key'] = 'developer';
+
+    params.removeWhere((key, value) => value == null);
+    params['sign'] = PublishUtil.oppoSign(access!, params);
+    var map = await PublishUtil.sendRequest(
+      'https://developer-api.vivo.com/router/rest',
       params,
       isGet: false,
     );
@@ -85,14 +109,14 @@ class AppPackagePublisherVivo extends AppPackagePublisher {
     PublishProgressCallback? onPublishProgress,
   ) async {
     var request = http.MultipartRequest(
-        'POST', Uri.parse('https://developer-api.vivo.com.cn/router/rest'));
-    request.fields['method'] = 'app.upload.apk.app';
+        'POST', Uri.parse('https://developer-api.vivo.com/router/rest'));
+    request.fields['method'] = 'app.upload.apk';
     request.fields['access_key'] = client!;
     request.fields['format'] = 'json';
     request.fields['timestamp'] =
         (DateTime.now().millisecondsSinceEpoch).toString();
-    request.fields['v'] = '1.0';
-    request.fields['sign_method'] = 'hmac';
+    request.fields['version'] = '1.0';
+    request.fields['sign_method'] = 'hmac-sha256';
     request.fields['target_app_key'] = 'developer';
     request.fields['packageName'] = pkg;
     var fileMd5 = md5.convert(file.readAsBytesSync()).toString();

@@ -9,6 +9,7 @@ import 'package:flutter_app_publisher/src/publishers/oppo/app_package_publisher_
 import 'package:flutter_app_publisher/src/publishers/publishers.dart';
 import 'package:flutter_app_publisher/src/publishers/samsung/app_package_publisher_samsung.dart';
 import 'package:flutter_app_publisher/src/publishers/vivo/app_package_publisher_vivo.dart';
+import 'package:flutter_app_publisher/src/publishers/vivo_oversea/app_package_publisher_vivo_oversea.dart';
 
 class FlutterAppPublisher {
   final List<AppPackagePublisher> _publishers = [
@@ -22,6 +23,7 @@ class FlutterAppPublisher {
     AppPackagePublisherHonor(),
     AppPackagePublisherDoorzo(),
     AppPackagePublisherSamsung(),
+    AppPackagePublisherVivoOversea(),
   ];
 
   Future<PublishResult> publish(
