@@ -1,19 +1,15 @@
-import 'dart:convert';
 import 'dart:io';
 
-import 'package:crypto/crypto.dart';
-import 'package:dio/dio.dart';
 import 'package:flutter_app_publisher/src/api/app_package_publisher.dart';
 import 'package:flutter_app_publisher/src/publishers/mi/app_package_publisher_mi.dart';
 import 'package:flutter_app_publisher/src/publishers/oppo/app_package_publisher_oppo.dart';
 import 'package:flutter_oss_aliyun/flutter_oss_aliyun.dart';
-import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 
 const kEnvDoorzoOssInfo = 'DOORZO_OSS_INFO';
 
-class AppPackagePublisherDoorzo extends AppPackagePublisher {
+class AppPackagePublisherDoorzoPda extends AppPackagePublisher {
   @override
-  String get name => 'doorzo';
+  String get name => 'doorzoPda';
 
   late Map<String, String> globalEnvironment;
 
@@ -89,11 +85,6 @@ class AppPackagePublisherDoorzo extends AppPackagePublisher {
         headers: {"cache-control": "no-cache"},
       ),
     );
-    //再上传一个到做广告里
-    await Client().copyObject(CopyRequestOption(
-        sourceFileKey: key,
-        targetFileKey: 'publish/' + globalEnvironment[kEnvModuleName]! + '.apk',
-        override: true));
     return ret.realUri.toString();
   }
 }
