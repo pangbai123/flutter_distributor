@@ -146,12 +146,14 @@ class DoorzoHttpClient {
 parseJson2Map(Map map) {
   var ret = json.decode(map['data']);
   var type = map['type'];
+  print(type);
   var src = ret['data'];
   if (ret['code'] == 200) {
     if (type.startsWith('Map') ||
         type == 'Object' ||
         type == 'double' ||
         type == 'int' ||
+        type == 'dynamic' ||
         type == 'bool') {
       return src;
     } else if (type.startsWith('String')) {

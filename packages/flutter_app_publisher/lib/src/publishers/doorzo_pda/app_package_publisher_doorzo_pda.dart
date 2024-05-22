@@ -23,7 +23,6 @@ class AppPackagePublisherDoorzoPda extends AppPackagePublisher {
     Map<String, dynamic>? publishArguments,
     PublishProgressCallback? onPublishProgress,
   }) async {
-    print('111');
     globalEnvironment = environment ?? Platform.environment;
     File file = fileSystemEntity as File;
     DoorzoHttpClient.instance.init();
