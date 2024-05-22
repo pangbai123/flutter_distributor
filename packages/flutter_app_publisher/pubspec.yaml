@@ -9,6 +9,7 @@ environment:
 
 dependencies:
   dio: ^5.3.4
+  dio_cookie_manager: 3.1.1
   googleapis: ^13.1.0
   googleapis_auth: ^1.5.1
   parse_app_package: ^0.4.0

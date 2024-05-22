@@ -1,11 +1,14 @@
 import 'dart:io';
 
 import 'package:flutter_app_publisher/src/api/app_package_publisher.dart';
+import 'package:flutter_app_publisher/src/api/http_client.dart';
+import 'package:flutter_app_publisher/src/publishers/doorzo/app_package_publisher_doorzo.dart';
 import 'package:flutter_app_publisher/src/publishers/mi/app_package_publisher_mi.dart';
 import 'package:flutter_app_publisher/src/publishers/oppo/app_package_publisher_oppo.dart';
 import 'package:flutter_oss_aliyun/flutter_oss_aliyun.dart';
 
-const kEnvDoorzoOssInfo = 'DOORZO_OSS_INFO';
+const kEnvDoorzoAccount = 'DOORZO_ACCOUNT';
+const kEnvDoorzoPwd = 'DOORZO_PWD';
 
 class AppPackagePublisherDoorzoPda extends AppPackagePublisher {
   @override
@@ -20,8 +23,10 @@ class AppPackagePublisherDoorzoPda extends AppPackagePublisher {
     Map<String, dynamic>? publishArguments,
     PublishProgressCallback? onPublishProgress,
   }) async {
+    print('111');
     globalEnvironment = environment ?? Platform.environment;
     File file = fileSystemEntity as File;
+    DoorzoHttpClient.instance.init();
     var url = await uploadApp(file, onPublishProgress);
     print('上传文件成功：${url}');
     await submit(url);
@@ -29,22 +34,27 @@ class AppPackagePublisherDoorzoPda extends AppPackagePublisher {
   }
 
   Future submit(String url) async {
-    //修改我们后台版本信息
-    Map<String, dynamic> params = {};
-    params['adaptive_type'] = 1;
-    //
-    // String content = await sendRequest(
-    //     'https://oop-openapi-cn.heytapmobi.com/resource/v1/app/upd', params,
-    //     isGet: false);
-    // if (content.isEmpty) {
-    //   throw PublishError("请求submit失败：$content");
-    // }
-    // Map map = jsonDecode(content);
-    // if (map["errno"] == 0) {
-    //   return map;
-    // } else {
-    //   throw PublishError("请求submit失败：$content");
-    // }
+    print('登录成功');
+    await DoorzoHttpClient.instance.syncRequest(
+      {
+        'n': 'Sig.Admin.Warehouse.Login',
+        'user': globalEnvironment[kEnvDoorzoAccount],
+        'password': globalEnvironment[kEnvDoorzoPwd],
+      },
+      isGet: false,
+    );
+
+    await DoorzoHttpClient.instance.syncRequest(
+      {
+        'n': 'Sig.Admin.Warehouse.UpgradeWarehouseAppInfo',
+        'Version': globalEnvironment[kEnvVersionName],
+        'Content': globalEnvironment[kEnvUpdateLog],
+        'ForceUpgrade': globalEnvironment[kEnvForceUpgrade] == '是' ? 1 : 0,
+        'Url': url,
+      },
+      isGet: false,
+    );
+    print('发布成功');
   }
 
   ///上传文件到阿里云
