@@ -83,8 +83,8 @@ class AppPackagePublisherDoorzoWin extends AppPackagePublisher {
     var key = info[2] + '/win.exe';
     try {
       var ret = await Client().putObjectFile(
-        file.path.replaceAll("+", "%2B"),
-        fileKey: key.replaceAll("+", "%2B"),
+        file.path,
+        fileKey: key,
         option: PutRequestOption(
           onSendProgress: (count, total) {
             onPublishProgress?.call(count, total);
