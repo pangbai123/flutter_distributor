@@ -78,20 +78,24 @@ class AppPackagePublisherDoorzoWin extends AppPackagePublisher {
 
     var key =
         info[2] + '/' + file.path.substring(file.path.lastIndexOf('/') + 1);
-    print(key);
-    var ret = await Client().putObjectFile(
-      file.path,
-      fileKey: key,
-      option: PutRequestOption(
-        onSendProgress: (count, total) {
-          onPublishProgress?.call(count, total);
-        },
-        override: true,
-        aclModel: AclMode.publicRead,
-        storageType: StorageType.ia,
-        headers: {"cache-control": "no-cache"},
-      ),
-    );
-    return ret.realUri.toString();
+    try {
+      var ret = await Client().putObjectFile(
+        file.path,
+        fileKey: key,
+        option: PutRequestOption(
+          onSendProgress: (count, total) {
+            onPublishProgress?.call(count, total);
+          },
+          override: true,
+          aclModel: AclMode.publicRead,
+          storageType: StorageType.ia,
+          headers: {"cache-control": "no-cache"},
+        ),
+      );
+      return ret.realUri.toString();
+    }catch(e){
+      print(111);
+      print(e);
+    }
   }
 }
