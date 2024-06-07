@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:dio/dio.dart';
 import 'package:flutter_app_publisher/src/api/app_package_publisher.dart';
 import 'package:flutter_app_publisher/src/api/http_client.dart';
 import 'package:flutter_app_publisher/src/publishers/doorzo/app_package_publisher_doorzo.dart';
@@ -93,9 +94,10 @@ class AppPackagePublisherDoorzoWin extends AppPackagePublisher {
         ),
       );
       return ret.realUri.toString();
-    }catch(e){
-      print(111);
-      print(e);
+    } catch (e) {
+      if (e is DioException) {
+        print((e as DioException).response);
+      }
     }
     return '';
   }
