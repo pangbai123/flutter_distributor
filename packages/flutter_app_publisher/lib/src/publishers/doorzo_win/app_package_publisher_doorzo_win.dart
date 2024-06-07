@@ -80,8 +80,7 @@ class AppPackagePublisherDoorzoWin extends AppPackagePublisher {
       },
     );
 
-    var key =
-        info[2] + '/' + file.path.substring(file.path.lastIndexOf('/') + 1);
+    var key = info[2] + '/win.exe';
     try {
       var ret = await Client().putObjectFile(
         file.path.replaceAll("+", "%2B"),
