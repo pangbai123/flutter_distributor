@@ -32,7 +32,7 @@ class DoorzoHttpClient {
   static String platformUrl1 = 'https://sig.binpom.com/';
 
   ///是否测试平台
-  static bool isTest = true;
+  static bool isTest = false;
   static String baseUrl = platformUrl1;
 
   factory DoorzoHttpClient() => _getInstance();
@@ -70,6 +70,7 @@ class DoorzoHttpClient {
       receiveTimeout: Duration(seconds: reciveTime),
     ));
     cookieJar = PersistCookieJar();
+    await cookieJar!.deleteAll();
     cookieManager = CookieManager(cookieJar!);
 
     dio!.interceptors.add(cookieManager!);
