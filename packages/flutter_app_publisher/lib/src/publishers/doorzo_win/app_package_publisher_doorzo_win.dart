@@ -29,6 +29,9 @@ class AppPackagePublisherDoorzoWin extends AppPackagePublisher {
     File file = fileSystemEntity as File;
     DoorzoHttpClient.instance.init();
     var url = await uploadApp(file, onPublishProgress);
+    if (url == '') {
+      throw Exception("上传失败");
+    }
     print('上传文件成功：${url}');
     await submit(url);
     return PublishResult(url: globalEnvironment[kEnvAppName]! + name + '提交成功}');
@@ -81,8 +84,8 @@ class AppPackagePublisherDoorzoWin extends AppPackagePublisher {
         info[2] + '/' + file.path.substring(file.path.lastIndexOf('/') + 1);
     try {
       var ret = await Client().putObjectFile(
-        file.path,
-        fileKey: key,
+        file.path.replaceAll("+", "%2B"),
+        fileKey: key.replaceAll("+", "%2B"),
         option: PutRequestOption(
           onSendProgress: (count, total) {
             onPublishProgress?.call(count, total);
