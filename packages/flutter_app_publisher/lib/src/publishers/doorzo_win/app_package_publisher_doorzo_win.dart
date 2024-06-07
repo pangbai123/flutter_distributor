@@ -88,7 +88,7 @@ class AppPackagePublisherDoorzoWin extends AppPackagePublisher {
         },
         override: true,
         aclModel: AclMode.publicRead,
-        storageType: StorageType.standard,
+        storageType: StorageType.ia,
         headers: {"cache-control": "no-cache"},
       ),
     );
