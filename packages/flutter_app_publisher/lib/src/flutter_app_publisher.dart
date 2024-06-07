@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_app_publisher/src/api/app_package_publisher.dart';
 import 'package:flutter_app_publisher/src/publishers/doorzo/app_package_publisher_doorzo.dart';
 import 'package:flutter_app_publisher/src/publishers/doorzo_pda/app_package_publisher_doorzo_pda.dart';
+import 'package:flutter_app_publisher/src/publishers/doorzo_win/app_package_publisher_doorzo_win.dart';
 import 'package:flutter_app_publisher/src/publishers/honor/app_package_publisher_honor.dart';
 import 'package:flutter_app_publisher/src/publishers/huawei/app_package_publisher_huawei.dart';
 import 'package:flutter_app_publisher/src/publishers/mi/app_package_publisher_mi.dart';
@@ -26,6 +27,7 @@ class FlutterAppPublisher {
     AppPackagePublisherSamsung(),
     AppPackagePublisherVivoOversea(),
     AppPackagePublisherDoorzoPda(),
+    AppPackagePublisherDoorzoWin(),
   ];
 
   Future<PublishResult> publish(
