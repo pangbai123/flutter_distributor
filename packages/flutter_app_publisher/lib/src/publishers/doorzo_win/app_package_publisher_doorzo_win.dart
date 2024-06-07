@@ -97,5 +97,6 @@ class AppPackagePublisherDoorzoWin extends AppPackagePublisher {
       print(111);
       print(e);
     }
+    return '';
   }
 }
