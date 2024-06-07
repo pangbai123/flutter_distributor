@@ -99,6 +99,8 @@ class AppPackagePublisherDoorzoWin extends AppPackagePublisher {
     } catch (e) {
       if (e is DioException) {
         print((e as DioException).response);
+      } else {
+        print(e);
       }
     }
     return '';
