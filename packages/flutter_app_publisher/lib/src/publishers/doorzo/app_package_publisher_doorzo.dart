@@ -26,6 +26,8 @@ class AppPackagePublisherDoorzo extends AppPackagePublisher {
     Map<String, dynamic>? publishArguments,
     PublishProgressCallback? onPublishProgress,
   }) async {
+
+
     globalEnvironment = environment ?? Platform.environment;
     File file = fileSystemEntity as File;
     var url = await uploadApp(file, onPublishProgress);
