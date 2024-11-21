@@ -17,6 +17,7 @@ const kEnvVersionName = 'VERSION_NAME';
 const kEnvModuleName = 'MODULE_NAME';
 const kEnvUpdateLog = 'UPDATE_LOG';
 const kEnvForceUpgrade = 'FORCE_UPGRADE';
+const kEnvAliAppName = 'ALI_APP_NAME';
 
 ///  doc [https://open.oppomobile.com/new/developmentDoc/info?id=10998]
 class AppPackagePublisherOppo extends AppPackagePublisher {

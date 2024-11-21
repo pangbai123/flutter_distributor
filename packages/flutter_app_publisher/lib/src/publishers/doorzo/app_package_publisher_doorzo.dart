@@ -5,6 +5,7 @@ import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_app_publisher/src/api/app_package_publisher.dart';
 import 'package:flutter_app_publisher/src/api/http_client.dart';
+import 'package:flutter_app_publisher/src/publishers/doorzo_pda/app_package_publisher_doorzo_pda.dart';
 import 'package:flutter_app_publisher/src/publishers/mi/app_package_publisher_mi.dart';
 import 'package:flutter_app_publisher/src/publishers/oppo/app_package_publisher_oppo.dart';
 import 'package:flutter_oss_aliyun/flutter_oss_aliyun.dart';
@@ -40,6 +41,16 @@ class AppPackagePublisherDoorzo extends AppPackagePublisher {
     //修改我们后台版本信息
     await DoorzoHttpClient.instance.syncRequest(
       {
+        'n': 'Sig.Admin.Warehouse.Login',
+        'user': globalEnvironment[kEnvDoorzoAccount],
+        'password': globalEnvironment[kEnvDoorzoPwd],
+      },
+      isGet: false,
+    );
+    print('登录成功');
+
+    await DoorzoHttpClient.instance.syncRequest(
+      {
         'n': 'Sig.Admin.Warehouse.UpgradeFrontAppInfo',
         globalEnvironment[kEnvDoorzoUrlKey]!: url,
       },
@@ -69,7 +80,7 @@ class AppPackagePublisherDoorzo extends AppPackagePublisher {
 
     var key = info[2] +
         '/' +
-        globalEnvironment[kEnvModuleName]! +
+        globalEnvironment[kEnvAliAppName]! +
         '_' +
         globalEnvironment[kEnvVersionName]! +
         '.apk';
@@ -89,7 +100,7 @@ class AppPackagePublisherDoorzo extends AppPackagePublisher {
     //再上传一个到做广告里
     await Client().copyObject(CopyRequestOption(
         sourceFileKey: key,
-        targetFileKey: 'publish/' + globalEnvironment[kEnvModuleName]! + '.apk',
+        targetFileKey: 'publish/' + globalEnvironment[kEnvAliAppName]! + '.apk',
         override: true));
     return ret.realUri.toString();
   }

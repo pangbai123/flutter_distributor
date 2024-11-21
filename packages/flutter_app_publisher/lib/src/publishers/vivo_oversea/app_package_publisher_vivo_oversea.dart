@@ -36,12 +36,14 @@ class AppPackagePublisherVivoOversea extends AppPackagePublisher {
     if ((client ?? '').isEmpty) {
       throw PublishError('Missing `$kEnvVivoOverseaKey` environment variable.');
     }
+    print("-----$access----$client");
     if ((access ?? '').isEmpty) {
       throw PublishError(
           'Missing `$kEnvVivoOverseaSecret` environment variable.');
     }
     Map uploadInfo = await uploadApp(
         globalEnvironment[kEnvPkgName]!, file, onPublishProgress);
+    print("aaaa");
     print('上传文件成功：${jsonEncode(uploadInfo)}');
     // //提交审核信息
     await updateInfo(uploadInfo);
@@ -124,10 +126,11 @@ class AppPackagePublisherVivoOversea extends AppPackagePublisher {
     request.files.add(await http.MultipartFile.fromPath('file', file.path));
     request.fields['sign'] = PublishUtil.oppoSign(access!, request.fields);
     var response = await request.send();
+    print("=====$response=====");
     if (response.statusCode == 200) {
       String content = await response.stream.bytesToString();
       Map responseMap = jsonDecode(content);
-      if (responseMap["code"] == 0) {
+      if (responseMap["code"] == "0") {
         return responseMap;
       } else {
         throw PublishError(content);
