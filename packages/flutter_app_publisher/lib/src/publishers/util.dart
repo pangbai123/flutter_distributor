@@ -10,7 +10,7 @@ import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 class PublishUtil {
   // dio 网络请求实例
   static final Dio _dio = Dio(BaseOptions(
-      connectTimeout: Duration(seconds: 15),
+      connectTimeout: Duration(seconds: 60),
       receiveTimeout: Duration(seconds: 60)))
     ..interceptors.add(PrettyDioLogger(
         requestHeader: true,
@@ -18,7 +18,7 @@ class PublishUtil {
         responseHeader: true,
         maxWidth: 600));
 
-  static Future<Map?> sendRequest(
+  static Future<dynamic> sendRequest(
     String requestUrl,
     dynamic params, {
     Map<String, dynamic>? header,

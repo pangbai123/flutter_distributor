@@ -1,35 +1,37 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:crypto/crypto.dart';
-import 'package:dio/dio.dart';
+import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
+import 'package:flutter_app_publisher/src/api/app_package_publisher.dart';
 import 'package:flutter_app_publisher/src/publishers/mi/app_package_publisher_mi.dart';
 import 'package:flutter_app_publisher/src/publishers/oppo/app_package_publisher_oppo.dart';
 import 'package:flutter_app_publisher/src/publishers/util.dart';
 import 'package:http/http.dart' as http;
-import 'package:flutter_app_publisher/src/api/app_package_publisher.dart';
-import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 
-const kEnvVivoKey = 'VIVO_ACCESS_KEY';
-const kEnvVivoSecret = 'VIVO_ACCESS_SECRET';
+const String serviceAccountId = "SAMSUNG_SACCOUNT_ID";
+const String contentID = "SAMSUNG_CONTENT_ID";
+const String privateKey = "SAMSUNG_PRIVITE_KEY";
+const String baseUrl = "https://devapi.samsungapps.com";
+const String tokenUrl = baseUrl + "/auth/accessToken";
+const String sessionIDUrl = baseUrl + "/seller/createUploadSessionId";
+const String appInfoUrl = baseUrl + "/seller/contentInfo";
+const String updateUrl = baseUrl + "/seller/contentUpdate";
+const String submitUrl = baseUrl + "/seller/contentSubmit";
+
+
+
+const kEnvPkgName = 'PKG_NAME';
 
 ///  doc [https://developer.samsung.com/galaxy-store/galaxy-store-developer-api.html]
 class AppPackagePublisherSamsung extends AppPackagePublisher {
   @override
   String get name => 'samsung';
-
-  // dio 网络请求实例
-  final Dio _dio = Dio(BaseOptions(
-      connectTimeout: Duration(seconds: 15),
-      receiveTimeout: Duration(seconds: 60)))
-    ..interceptors.add(PrettyDioLogger(
-        requestHeader: true,
-        requestBody: true,
-        responseHeader: true,
-        maxWidth: 600));
   String? client;
   String? access;
   late Map<String, String> globalEnvironment;
+  String? accessToken;
+  String? uploadUrl;
+  String? sessionId;
 
   @override
   Future<PublishResult> publish(
@@ -39,87 +41,198 @@ class AppPackagePublisherSamsung extends AppPackagePublisher {
     PublishProgressCallback? onPublishProgress,
   }) async {
     globalEnvironment = environment ?? Platform.environment;
+    accessToken = await requestAccessToken();
+    if ((accessToken ?? '').isEmpty) {
+      throw PublishError('accessToken 为空');
+    }
+    Map? map = await createUploadSessionId();
+    uploadUrl = map?['url'];
+    sessionId = map?['sessionId'];
+    if ((uploadUrl ?? '').isEmpty || (sessionId ?? '').isEmpty) {
+      throw PublishError('uploadUrl 或者 sessionId 为空');
+    }
+    Map<String, dynamic>? appInfo = await getAppInfo();
+    if (appInfo == null) {
+      throw PublishError('app信息 为空');
+    }
+
     File file = fileSystemEntity as File;
-    client = globalEnvironment[kEnvVivoKey];
-    access = globalEnvironment[kEnvVivoSecret];
-    if ((client ?? '').isEmpty) {
-      throw PublishError('Missing `$kEnvVivoKey` environment variable.');
+    Map<String, dynamic>? uploadInfo = await uploadApp(
+            globalEnvironment[kEnvPkgName]!, file, onPublishProgress)
+        as Map<String, dynamic>;
+    if (uploadInfo == null) {
+      throw PublishError('上传文件信息 为空');
     }
-    if ((access ?? '').isEmpty) {
-      throw PublishError('Missing `$kEnvVivoSecret` environment variable.');
+
+    Map<String, dynamic> binaryParam;
+    List<dynamic>? list = appInfo["binaryList"];
+    if ((list?.length ?? 0) > 0) {
+      binaryParam = Map.from(list![0]);
+    } else {
+      list = [];
+      binaryParam = {};
     }
-    Map uploadInfo = await uploadApp(
-        globalEnvironment[kEnvPkgName]!, file, onPublishProgress);
-    print('上传文件成功：${jsonEncode(uploadInfo)}');
-    // //提交审核信息
-    Map submitInfo = await submit(uploadInfo, {});
+    binaryParam["fileName"] = uploadInfo["fileName"];
+    binaryParam["versionCode"] = globalEnvironment[kEnvVersionCode];
+    binaryParam["versionName"] = globalEnvironment[kEnvVersionName];
+    binaryParam["filekey"] = uploadInfo["fileKey"];
+    list.add(binaryParam);
+
+    Map<String, dynamic> params = {
+      "contentId": appInfo["contentId"],
+      "appTitle": appInfo["appTitle"],
+      "defaultLanguageCode": appInfo["defaultLanguageCode"],
+      "paid": appInfo["paid"],
+      "publicationType": appInfo["publicationType"],
+      "binaryList": list,
+    };
+    await updateAppInfo(params);
+    await submit();
     return PublishResult(url: globalEnvironment[kEnvAppName]! + name + '提交成功}');
   }
 
-  Future<Map> submit(Map uploadInfo, Map appInfo) async {
-    Map<String, dynamic> params = {};
-    params['packageName'] = globalEnvironment[kEnvPkgName];
-    params['versionCode'] = globalEnvironment[kEnvVersionCode];
-    params['apk'] = uploadInfo['data']['serialnumber'];
-    params['fileMd5'] = uploadInfo['data']['fileMd5'];
-    params['onlineType'] = 1;
-    params['updateDesc'] = globalEnvironment[kEnvUpdateLog];
-
-    params['method'] = 'app.sync.update.app';
-    params['access_key'] = client!;
-    params['format'] = 'json';
-    params['timestamp'] = (DateTime.now().millisecondsSinceEpoch).toString();
-    params['v'] = '1.0';
-    params['sign_method'] = 'hmac';
-    params['target_app_key'] = 'developer';
-
-    params.removeWhere((key, value) => value == null);
-    params['sign'] = PublishUtil.oppoSign(access!, params);
-    var map = await PublishUtil.sendRequest(
-      'https://developer-api.vivo.com.cn/router/rest',
-      params,
-      isGet: false,
-    );
-    if (map?["code"] == 0) {
-      return map!;
-    } else {
-      throw PublishError("请求submit失败");
-    }
+  submit() {
+    Map<String, dynamic> header = getHeaderPrams();
+    Map<String, dynamic> params = {
+      "contentId": globalEnvironment[contentID],
+    };
+    dynamic response = PublishUtil.sendRequest(submitUrl, params,
+        header: header, isGet: false);
+    return response;
   }
 
-  ///上传文件
-  Future<Map> uploadApp(
+  updateAppInfo(Map<String, dynamic> params) async {
+    Map<String, dynamic> header = getHeaderPrams();
+    Map? response = await PublishUtil.sendRequest(updateUrl, params,
+        header: header, isGet: false);
+    print("updateAppInfo======${response}========");
+    return;
+  }
+
+  Future<Map<String, dynamic>?> getAppInfo() async {
+    Map<String, dynamic> header = getHeaderPrams();
+    Map<String, dynamic> params = {
+      "contentId": globalEnvironment[contentID],
+    };
+    dynamic response =
+        await PublishUtil.sendRequest(appInfoUrl, params, header: header);
+    if ((response?.length ?? 0) > 0) {
+      return response![0];
+    }
+    return null;
+  }
+
+  Future<Map<String, dynamic>?> uploadApp(
     String pkg,
     File file,
     PublishProgressCallback? onPublishProgress,
   ) async {
-    var request = http.MultipartRequest(
-        'POST', Uri.parse('https://developer-api.vivo.com.cn/router/rest'));
-    request.fields['method'] = 'app.upload.apk.app';
-    request.fields['access_key'] = client!;
-    request.fields['format'] = 'json';
-    request.fields['timestamp'] =
-        (DateTime.now().millisecondsSinceEpoch).toString();
-    request.fields['v'] = '1.0';
-    request.fields['sign_method'] = 'hmac';
-    request.fields['target_app_key'] = 'developer';
-    request.fields['packageName'] = pkg;
-    var fileMd5 = md5.convert(file.readAsBytesSync()).toString();
-    request.fields['fileMd5'] = fileMd5;
-    request.files.add(await http.MultipartFile.fromPath('file', file.path));
-    request.fields['sign'] = PublishUtil.oppoSign(access!, request.fields);
-    var response = await request.send();
-    if (response.statusCode == 200) {
-      String content = await response.stream.bytesToString();
-      Map responseMap = jsonDecode(content);
-      if (responseMap["code"] == 0) {
-        return responseMap;
+    // 构建上传的文件
+    var request = http.MultipartRequest('POST', Uri.parse(uploadUrl!));
+
+    // 设置请求头
+    request.headers.addAll(getHeaderPrams());
+
+    // 将文件添加到请求中
+    var fileStream = http.ByteStream(file.openRead());
+    var length = await file.length();
+    var multipartFile =
+        http.MultipartFile('file', fileStream, length, filename: "google.apk");
+    request.files.add(multipartFile);
+    request.fields['sessionId'] = sessionId!;
+    if (onPublishProgress != null) {
+      // 你可以在这里通过 ByteStream 和监听进度来实现进度回调
+      // 例如你可以监听 `fileStream`，根据上传进度来触发回调
+    }
+
+    try {
+      // 发送请求并等待响应
+      var response = await request.send();
+      if (response.statusCode == 200) {
+        // 读取响应内容
+        var responseData = await response.stream.bytesToString();
+        Map<String, dynamic> responseMap = jsonDecode(responseData);
+        return responseMap; // 或者根据返回格式解析返回的 JSON 数据
       } else {
-        throw PublishError(content);
+        print('Upload failed with status: ${response.statusCode}');
       }
-    } else {
-      // 处理错误的响应
-      throw PublishError("请求失败：${response.statusCode}");
+    } catch (e) {
+      print('Error during file upload: $e');
+    }
+
+    return null;
+  }
+
+  String generateJWT() {
+    final jwt = JWT(
+      {
+        "iss": globalEnvironment[serviceAccountId],
+        "iat": DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        "scopes": ["publishing", "gss"],
+        "exp":
+            DateTime.now().add(Duration(minutes: 5)).millisecondsSinceEpoch ~/
+                1000,
+      },
+    );
+    final token = jwt.sign(
+      RSAPrivateKey(globalEnvironment[privateKey]!),
+      algorithm: JWTAlgorithm.RS256,
+    );
+    return token;
+  }
+
+  Future<Map?> createUploadSessionId() async {
+    Map<String, dynamic> header = getHeaderPrams();
+    Map<String, dynamic> params = {
+      "contentId": globalEnvironment[contentID],
+    };
+    Map? response = await PublishUtil.sendRequest(sessionIDUrl, params,
+        header: header, isGet: false);
+    return response;
+  }
+
+  Map<String, String> getHeaderPrams() {
+    return {
+      "Authorization": "Bearer $accessToken",
+      "Content-Type": "application/json",
+      "service-account-id": globalEnvironment[serviceAccountId]!,
+    };
+  }
+
+  Future<String?> requestAccessToken() async {
+    try {
+      final jwt = JWT(
+        {
+          "iss": globalEnvironment[serviceAccountId],
+          "iat": DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          "scopes": ["publishing", "gss"],
+          "exp":
+              DateTime.now().add(Duration(minutes: 5)).millisecondsSinceEpoch ~/
+                  1000,
+        },
+      );
+      final jwtToken = jwt.sign(
+        RSAPrivateKey(globalEnvironment[privateKey]!),
+        algorithm: JWTAlgorithm.RS256,
+      );
+      final response = await http.post(
+        Uri.parse(tokenUrl),
+        headers: {
+          "Authorization": "Bearer $jwtToken",
+          "Content-Type": "application/json",
+        },
+      );
+      if (response.statusCode == 200) {
+        final responseBody = jsonDecode(response.body);
+        String accessToken = responseBody["createdItem"]?["accessToken"];
+        return accessToken;
+      } else {
+        print("Error: ${response.statusCode} ${response.body}");
+        return null;
+      }
+    } catch (e) {
+      print("Exception: $e");
+      return null;
     }
   }
 }
