@@ -7,3 +7,5 @@ environment:
 dev_dependencies:
   flutter_lints: ^2.0.0
   melos: ^3.1.0
+  googleapis: ^13.2.0
+  googleapis_auth: ^1.6.0

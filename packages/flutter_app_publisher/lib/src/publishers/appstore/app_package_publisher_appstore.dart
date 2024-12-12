@@ -5,7 +5,6 @@ import 'package:flutter_app_publisher/src/publishers/appstore/publish_appstore_c
 import 'package:shell_executor/shell_executor.dart';
 
 /// AppStore doc [https://help.apple.com/asc/appsaltool/]
-/// AppStore doc [https://developer.apple.com/documentation/appstoreconnectapi?changes=latest_minor]
 class AppPackagePublisherAppStore extends AppPackagePublisher {
   @override
   String get name => 'appstore';
@@ -15,17 +14,17 @@ class AppPackagePublisherAppStore extends AppPackagePublisher {
 
   @override
   Future<PublishResult> publish(
-    FileSystemEntity fileSystemEntity, {
-    Map<String, String>? environment,
-    Map<String, dynamic>? publishArguments,
-    PublishProgressCallback? onPublishProgress,
-  }) async {
+      FileSystemEntity fileSystemEntity, {
+        Map<String, String>? environment,
+        Map<String, dynamic>? publishArguments,
+        PublishProgressCallback? onPublishProgress,
+      }) async {
     File file = fileSystemEntity as File;
     // Get type
     String type = file.path.endsWith('.ipa') ? 'ios' : 'osx';
     // Get config
     PublishAppStoreConfig publishConfig =
-        PublishAppStoreConfig.parse(environment, publishArguments);
+    PublishAppStoreConfig.parse(environment, publishArguments);
     // Publish to AppStore
     ProcessResult processResult = await $(
       'xcrun',

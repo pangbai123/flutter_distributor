@@ -65,13 +65,18 @@ class AppPackagePublisherSamsung extends AppPackagePublisher {
     }
 
     Map<String, dynamic> binaryParam;
-    List<dynamic>? list = appInfo["binaryList"];
-    if ((list?.length ?? 0) > 0) {
-      binaryParam = Map.from(list![0]);
-    } else {
-      list = [];
-      binaryParam = {};
-    }
+    List<dynamic> list = appInfo?["binaryList"]??[];
+    // if ((list?.length ?? 0) > 0) {
+    //   binaryParam = Map.from(list![0]);
+    //   binaryParam["binarySeq"] = list?.length.toString();
+    // } else {
+    //   list = [];
+    //   binaryParam = {};
+    //   binaryParam = {"binarySeq":"1","gms": "Y","iapSdk": "N","packageName":globalEnvironment[kEnvPkgName]};
+    // }
+    list = [];
+    binaryParam = {};
+    binaryParam = {"gms": "N","iapSdk": "N","packageName":globalEnvironment[kEnvPkgName]};
     binaryParam["fileName"] = uploadInfo["fileName"];
     binaryParam["versionCode"] = globalEnvironment[kEnvVersionCode];
     binaryParam["versionName"] = globalEnvironment[kEnvVersionName];
