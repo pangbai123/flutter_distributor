@@ -16,17 +16,17 @@ class PublishAppStoreConfig extends PublishConfig {
   });
 
   factory PublishAppStoreConfig.parse(
-    Map<String, String>? environment,
-    Map<String, dynamic>? publishArguments,
-  ) {
+      Map<String, String>? environment,
+      Map<String, dynamic>? publishArguments,
+      ) {
     // Get authorization info
     String? username =
-        (environment ?? Platform.environment)[kEnvAppStoreUsername];
+    (environment ?? Platform.environment)[kEnvAppStoreUsername];
     String? password =
-        (environment ?? Platform.environment)[kEnvAppStorePassword];
+    (environment ?? Platform.environment)[kEnvAppStorePassword];
     String? apiKey = (environment ?? Platform.environment)[kEnvAppStoreApiKey];
     String? apiIssuer =
-        (environment ?? Platform.environment)[kEnvAppStoreApiIssuer];
+    (environment ?? Platform.environment)[kEnvAppStoreApiIssuer];
     // Check username & password & apiKey & apiIssuer
     if ('$username$password$apiKey$apiIssuer'.replaceAll('null', '').isEmpty) {
       throw PublishError(

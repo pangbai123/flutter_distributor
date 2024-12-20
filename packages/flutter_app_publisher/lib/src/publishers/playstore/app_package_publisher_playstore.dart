@@ -6,7 +6,6 @@ import 'package:flutter_app_publisher/src/publishers/playstore/publish_playstore
 import 'package:googleapis/androidpublisher/v3.dart';
 import 'package:googleapis_auth/auth_io.dart';
 
-//https://developers.google.cn/android-publisher?hl=zh-cn
 class AppPackagePublisherPlayStore extends AppPackagePublisher {
   @override
   String get name => 'playstore';
@@ -16,11 +15,11 @@ class AppPackagePublisherPlayStore extends AppPackagePublisher {
 
   @override
   Future<PublishResult> publish(
-    FileSystemEntity fileSystemEntity, {
-    Map<String, String>? environment,
-    Map<String, dynamic>? publishArguments,
-    PublishProgressCallback? onPublishProgress,
-  }) async {
+      FileSystemEntity fileSystemEntity, {
+        Map<String, String>? environment,
+        Map<String, dynamic>? publishArguments,
+        PublishProgressCallback? onPublishProgress,
+      }) async {
     File file = fileSystemEntity as File;
     PublishPlayStoreConfig publishConfig = PublishPlayStoreConfig.parse(
       environment,
@@ -29,7 +28,7 @@ class AppPackagePublisherPlayStore extends AppPackagePublisher {
 
     String jsonString = File(publishConfig.credentialsFile).readAsStringSync();
     ServiceAccountCredentials serviceAccountCredentials =
-        ServiceAccountCredentials.fromJson(json.decode(jsonString));
+    ServiceAccountCredentials.fromJson(json.decode(jsonString));
 
     final client = await clientViaServiceAccount(
       serviceAccountCredentials,
@@ -51,6 +50,16 @@ class AppPackagePublisherPlayStore extends AppPackagePublisher {
       appEdit.id!,
       uploadMedia: uploadMedia,
     );
+
+    if (publishConfig.track != null) {
+      //must update track before edit commit.
+      await publisherApi.edits.tracks.update(
+        Track(track: publishConfig.track),
+        publishConfig.packageName,
+        appEdit.id!,
+        publishConfig.track!,
+      );
+    }
 
     await publisherApi.edits.commit(
       publishConfig.packageName,

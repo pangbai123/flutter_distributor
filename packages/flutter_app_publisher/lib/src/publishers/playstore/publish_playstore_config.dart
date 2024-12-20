@@ -8,14 +8,15 @@ class PublishPlayStoreConfig extends PublishConfig {
   PublishPlayStoreConfig({
     required this.credentialsFile,
     required this.packageName,
+    required this.track,
   });
 
   factory PublishPlayStoreConfig.parse(
-    Map<String, String>? environment,
-    Map<String, dynamic>? publishArguments,
-  ) {
+      Map<String, String>? environment,
+      Map<String, dynamic>? publishArguments,
+      ) {
     String? credentialsFile =
-        (environment ?? Platform.environment)[kEnvPlayStoreCredentialsFile];
+    (environment ?? Platform.environment)[kEnvPlayStoreCredentialsFile];
 
     if ((credentialsFile ?? '').isEmpty) {
       throw PublishError(
@@ -25,9 +26,11 @@ class PublishPlayStoreConfig extends PublishConfig {
     PublishPlayStoreConfig publishConfig = PublishPlayStoreConfig(
       credentialsFile: credentialsFile!,
       packageName: publishArguments?['package-name'],
+      track: publishArguments?['track'],
     );
     return publishConfig;
   }
   final String credentialsFile;
   final String packageName;
+  final String? track;
 }

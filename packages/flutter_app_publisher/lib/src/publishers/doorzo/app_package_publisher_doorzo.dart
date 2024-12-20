@@ -4,12 +4,15 @@ import 'dart:io';
 import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_app_publisher/src/api/app_package_publisher.dart';
+import 'package:flutter_app_publisher/src/api/http_client.dart';
+import 'package:flutter_app_publisher/src/publishers/doorzo_pda/app_package_publisher_doorzo_pda.dart';
 import 'package:flutter_app_publisher/src/publishers/mi/app_package_publisher_mi.dart';
 import 'package:flutter_app_publisher/src/publishers/oppo/app_package_publisher_oppo.dart';
 import 'package:flutter_oss_aliyun/flutter_oss_aliyun.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 
 const kEnvDoorzoOssInfo = 'DOORZO_OSS_INFO';
+const kEnvDoorzoUrlKey = 'DOORZO_URL_KEY';
 
 class AppPackagePublisherDoorzo extends AppPackagePublisher {
   @override
@@ -24,6 +27,8 @@ class AppPackagePublisherDoorzo extends AppPackagePublisher {
     Map<String, dynamic>? publishArguments,
     PublishProgressCallback? onPublishProgress,
   }) async {
+
+
     globalEnvironment = environment ?? Platform.environment;
     File file = fileSystemEntity as File;
     var url = await uploadApp(file, onPublishProgress);
@@ -34,21 +39,24 @@ class AppPackagePublisherDoorzo extends AppPackagePublisher {
 
   Future submit(String url) async {
     //修改我们后台版本信息
-    Map<String, dynamic> params = {};
-    params['adaptive_type'] = 1;
-    //
-    // String content = await sendRequest(
-    //     'https://oop-openapi-cn.heytapmobi.com/resource/v1/app/upd', params,
-    //     isGet: false);
-    // if (content.isEmpty) {
-    //   throw PublishError("请求submit失败：$content");
-    // }
-    // Map map = jsonDecode(content);
-    // if (map["errno"] == 0) {
-    //   return map;
-    // } else {
-    //   throw PublishError("请求submit失败：$content");
-    // }
+    await DoorzoHttpClient.instance.syncRequest(
+      {
+        'n': 'Sig.Admin.Warehouse.Login',
+        'user': globalEnvironment[kEnvDoorzoAccount],
+        'password': globalEnvironment[kEnvDoorzoPwd],
+      },
+      isGet: false,
+    );
+    print('登录成功');
+
+    await DoorzoHttpClient.instance.syncRequest(
+      {
+        'n': 'Sig.Admin.Warehouse.UpgradeFrontAppInfo',
+        globalEnvironment[kEnvDoorzoUrlKey]!: url,
+      },
+      isGet: false,
+    );
+    print('发布成功');
   }
 
   ///上传文件到阿里云
@@ -72,7 +80,7 @@ class AppPackagePublisherDoorzo extends AppPackagePublisher {
 
     var key = info[2] +
         '/' +
-        globalEnvironment[kEnvModuleName]! +
+        globalEnvironment[kEnvAliAppName]! +
         '_' +
         globalEnvironment[kEnvVersionName]! +
         '.apk';
@@ -92,7 +100,7 @@ class AppPackagePublisherDoorzo extends AppPackagePublisher {
     //再上传一个到做广告里
     await Client().copyObject(CopyRequestOption(
         sourceFileKey: key,
-        targetFileKey: 'publish/' + globalEnvironment[kEnvModuleName]! + '.apk',
+        targetFileKey: 'publish/' + globalEnvironment[kEnvAliAppName]! + '.apk',
         override: true));
     return ret.realUri.toString();
   }

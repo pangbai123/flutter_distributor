@@ -33,7 +33,6 @@ class AppPackagePublisherDoorzoPda extends AppPackagePublisher {
   }
 
   Future submit(String url) async {
-    print('登录成功');
     await DoorzoHttpClient.instance.syncRequest(
       {
         'n': 'Sig.Admin.Warehouse.Login',
@@ -42,6 +41,7 @@ class AppPackagePublisherDoorzoPda extends AppPackagePublisher {
       },
       isGet: false,
     );
+    print('登录成功');
 
     await DoorzoHttpClient.instance.syncRequest(
       {

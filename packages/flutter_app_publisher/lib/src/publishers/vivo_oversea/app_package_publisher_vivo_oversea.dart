@@ -1,14 +1,13 @@
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
-import 'package:dio/dio.dart';
+import 'package:flutter_app_publisher/src/api/app_package_publisher.dart';
 import 'package:flutter_app_publisher/src/publishers/mi/app_package_publisher_mi.dart';
 import 'package:flutter_app_publisher/src/publishers/oppo/app_package_publisher_oppo.dart';
 import 'package:flutter_app_publisher/src/publishers/util.dart';
 import 'package:http/http.dart' as http;
-import 'package:flutter_app_publisher/src/api/app_package_publisher.dart';
-import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 
 const kEnvVivoOverseaKey = 'VIVO_OVERSEA_ACCESS_KEY';
 const kEnvVivoOverseaSecret = 'VIVO_OVERSEA_ACCESS_SECRET';
@@ -36,12 +35,14 @@ class AppPackagePublisherVivoOversea extends AppPackagePublisher {
     if ((client ?? '').isEmpty) {
       throw PublishError('Missing `$kEnvVivoOverseaKey` environment variable.');
     }
+    print("-----$access----$client");
     if ((access ?? '').isEmpty) {
       throw PublishError(
           'Missing `$kEnvVivoOverseaSecret` environment variable.');
     }
     Map uploadInfo = await uploadApp(
         globalEnvironment[kEnvPkgName]!, file, onPublishProgress);
+    print("aaaa");
     print('上传文件成功：${jsonEncode(uploadInfo)}');
     // //提交审核信息
     await updateInfo(uploadInfo);
@@ -49,11 +50,12 @@ class AppPackagePublisherVivoOversea extends AppPackagePublisher {
     return PublishResult(url: globalEnvironment[kEnvAppName]! + name + '提交成功}');
   }
 
+
+
   Future updateInfo(Map uploadInfo) async {
     Map<String, dynamic> params = {};
     params['packageName'] = globalEnvironment[kEnvPkgName];
-    params['apk'] = uploadInfo['data']['serialnumber'];
-
+    params['apk'] = uploadInfo['data']['serialNumber'];
     params['method'] = 'app.update.basic.info';
     params['access_key'] = client!;
     params['format'] = 'json';
@@ -63,13 +65,13 @@ class AppPackagePublisherVivoOversea extends AppPackagePublisher {
     params['target_app_key'] = 'developer';
 
     params.removeWhere((key, value) => value == null);
-    params['sign'] = PublishUtil.oppoSign(access!, params);
+    params['sign'] = sign(params,access!);
     var map = await PublishUtil.sendRequest(
       'https://developer-api.vivo.com/router/rest',
       params,
       isGet: false,
     );
-    if (map?["code"] == 0) {
+    if (map?["code"] == "0") {
     } else {
       throw PublishError("请求submit失败");
     }
@@ -79,7 +81,6 @@ class AppPackagePublisherVivoOversea extends AppPackagePublisher {
     Map<String, dynamic> params = {};
     params['packageName'] = globalEnvironment[kEnvPkgName];
     params['onlineType'] = 1;
-
     params['method'] = 'app.update.submit';
     params['access_key'] = client!;
     params['format'] = 'json';
@@ -95,7 +96,7 @@ class AppPackagePublisherVivoOversea extends AppPackagePublisher {
       params,
       isGet: false,
     );
-    if (map?["code"] == 0) {
+    if (map?["code"] == "0") {
       return map!;
     } else {
       throw PublishError("请求submit失败");
@@ -124,10 +125,11 @@ class AppPackagePublisherVivoOversea extends AppPackagePublisher {
     request.files.add(await http.MultipartFile.fromPath('file', file.path));
     request.fields['sign'] = PublishUtil.oppoSign(access!, request.fields);
     var response = await request.send();
+    print("=====$response=====");
     if (response.statusCode == 200) {
       String content = await response.stream.bytesToString();
       Map responseMap = jsonDecode(content);
-      if (responseMap["code"] == 0) {
+      if (responseMap["code"] == "0") {
         return responseMap;
       } else {
         throw PublishError(content);
@@ -137,4 +139,30 @@ class AppPackagePublisherVivoOversea extends AppPackagePublisher {
       throw PublishError("请求失败：${response.statusCode}");
     }
   }
+
+
+
+
+  String sign(Map<String, dynamic> paramsMap, String accessSecret) {
+    var sortedKeys = SplayTreeMap<String, dynamic>.from(paramsMap).keys;
+    List<String> paramList = [];
+    for (var key in sortedKeys) {
+      var value = paramsMap[key];
+      if (value == null) {
+        continue;
+      }
+      paramList.add('$key=${value.toString()}');
+    }
+    String params = paramList.join("&");
+    return hmacSHA256(params, accessSecret);
+  }
+
+  String hmacSHA256(String data, String secret) {
+    var key = utf8.encode(secret);
+    var bytes = utf8.encode(data);
+    var hmac = Hmac(sha256, key);
+    var digest = hmac.convert(bytes);
+    return digest.toString();
+  }
+
 }
