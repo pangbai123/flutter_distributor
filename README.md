@@ -1,5 +1,10 @@
 # flutter_distributor
 
+
+！！！！一定要在packages/flutter_distributor 下去部署！！！！
+dart pub global activate --source path ../flutter_distributor
+
+
 [![pub version][pub-image]][pub-url] [![][discord-image]][discord-url] ![][visits-count-image] [![melos](https://img.shields.io/badge/maintained%20with-melos-f700ff.svg?style=flat-square)](https://github.com/invertase/melos) [![All Contributors][all-contributors-image]](#contributors)
 
 [pub-image]: https://img.shields.io/pub/v/flutter_distributor.svg?style=flat-square
