@@ -71,11 +71,11 @@ class AppPackagePublisherHmos extends AppPackagePublisher {
       isGet: false,
       isFrom: false,
     );
-    if (map?["ret"]['code'] == 0) {
+    if (map?['ret']['code'] == 0) {
       return;
     } else {
       print('重试提交$times');
-      if (times == 30) throw PublishError("提交版本：${map}");
+      if (times == 30) throw PublishError('提交版本：${map}');
       await submit(times: times + 1);
     }
   }
@@ -94,15 +94,15 @@ class AppPackagePublisherHmos extends AppPackagePublisher {
       isFrom: false,
       isPut: false,
     );
-    return map["appInfo"];
+    return map['appInfo'];
   }
 
   Future updateDesc(Map appInfo) async {
-    String publishCountry = appInfo["publishCountry"];
+    String publishCountry = appInfo['publishCountry'];
     try {
       var map = await PublishUtil.sendRequest(
         'https://connect-api.cloud.huawei.com/api/publish/v3/app-info',
-        {"publishCountry": publishCountry, "encrypted": 0},
+        {'publishCountry': publishCountry, 'encrypted': 0},
         queryParams: {
           'appId': globalEnvironment[kEnvHuaweiAppId],
         },
@@ -114,8 +114,8 @@ class AppPackagePublisherHmos extends AppPackagePublisher {
         isFrom: false,
         isPut: true,
       );
-      print("!!!!!!!${map}!!!!!!!!");
-      if (map?["ret"]["code"] != 0) {
+      print('!!!!!!!${map}!!!!!!!!');
+      if (map?['ret']['code'] != 0) {
         return;
       }
       if (appInfo == null) {
@@ -145,7 +145,7 @@ class AppPackagePublisherHmos extends AppPackagePublisher {
         throw PublishError('更新应用信息失败（更新信息');
       }
     } catch (e) {
-      print("aaaa=======$e========");
+      print('aaaa=======$e========');
     }
   }
 
@@ -169,10 +169,10 @@ class AppPackagePublisherHmos extends AppPackagePublisher {
       isGet: true,
       isFrom: false,
     );
-    if (map?["ret"]['code'] == 0) {
+    if (map?['ret']['code'] == 0) {
       uploadMap = map!['urlInfo'];
     } else {
-      throw PublishError("请求getUploadAppUrl失败：${map}");
+      throw PublishError('请求getUploadAppUrl失败：${map}');
     }
     var response = await put(
       Uri.parse(uploadMap!['url']),
@@ -181,7 +181,7 @@ class AppPackagePublisherHmos extends AppPackagePublisher {
     );
 
     if (response.statusCode == 200) {
-      if (map?["ret"]['code'] == 0) {
+      if (map?['ret']['code'] == 0) {
         var map = await PublishUtil.sendRequest(
           'https://connect-api.cloud.huawei.com/api/publish/v3/app-package-info',
           {
@@ -199,57 +199,20 @@ class AppPackagePublisherHmos extends AppPackagePublisher {
           isFrom: false,
           isPut: true,
         );
-        if (map?["ret"]['code'] == 0) {
+        if (map?['ret']['code'] == 0) {
           return;
         } else {
-          throw PublishError("更新文件信息失败：${map}");
+          throw PublishError('更新文件信息失败：${map}');
         }
 
       } else {
-        throw PublishError("bbbb更新文件信息失败：${map}");
+        throw PublishError('bbbb更新文件信息失败：${map}');
       }
     } else {
-      throw PublishError("请求失败：${response.statusCode}");
+      throw PublishError('请求失败：${response.statusCode}');
     }
   }
 
-  ///上传文件
-  Future uploadGreen() async {
-    var file = File(globalEnvironment[kEnvHuaweiGreenFile]!);
-    Map? uploadMap;
-    var map = await PublishUtil.sendRequest(
-      'https://connect-api.cloud.huawei.com/api/publish/v2/upload-url/for-obs',
-      {
-        'appId': globalEnvironment[kEnvHuaweiAppId],
-        'fileName': file.path.split('/').last,
-        'contentLength': await file.length(),
-      },
-      header: {
-        'client_id': client,
-        'Authorization': 'Bearer ${token}',
-      },
-      isGet: true,
-      isFrom: false,
-    );
-    if (map?["ret"]['code'] == 0) {
-      uploadMap = map!['urlInfo'];
-    } else {
-      throw PublishError("请求getUploadAppUrl失败：${map}");
-    }
-    var response = await put(
-      Uri.parse(uploadMap!['url']),
-      body: file.readAsBytesSync(),
-      headers: (uploadMap['headers'] as Map).cast<String, String>(),
-    );
-    if (response.statusCode == 200) {
-      String content = await response.body;
-      print('文件上传成功：$content');
-      greenId = uploadMap['objectId'];
-    } else {
-      // 处理错误的响应
-      throw PublishError("请求失败：${response.statusCode}");
-    }
-  }
 
   /// 获取上传 Token 信息
   Future<String> getToken(String client, String secret) async {
