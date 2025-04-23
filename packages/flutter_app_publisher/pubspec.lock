@@ -405,10 +405,10 @@ packages:
     dependency: "direct main"
     description:
       name: shell_executor
-      sha256: "49254102f8feba7d5a4d528a412b22e59e7907dd4214036e9b9c6cbf047589e9"
+      sha256: "9c024546fc96470a6b96be9902f0bc05347a017a7638ed8d93c77e8d77eb3c3c"
       url: "https://pub.flutter-io.cn"
     source: hosted
-    version: "0.1.5"
+    version: "0.1.6"
   source_span:
     dependency: transitive
     description:
