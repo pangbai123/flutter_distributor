@@ -13,6 +13,8 @@ import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 
 const kEnvDoorzoOssInfo = 'DOORZO_OSS_INFO';
 const kEnvDoorzoUrlKey = 'DOORZO_URL_KEY';
+const kEnvDoorzoVersionKey = 'DOORZO_VERSION_KEY';
+
 
 class AppPackagePublisherDoorzo extends AppPackagePublisher {
   @override
@@ -52,6 +54,9 @@ class AppPackagePublisherDoorzo extends AppPackagePublisher {
     await DoorzoHttpClient.instance.syncRequest(
       {
         'n': 'Sig.Admin.Warehouse.UpgradeFrontAppInfo',
+        if (globalEnvironment[kEnvDoorzoVersionKey] != null)
+          "${globalEnvironment[kEnvDoorzoVersionKey]}":
+              globalEnvironment[kEnvVersionName],
         globalEnvironment[kEnvDoorzoUrlKey]!: url,
       },
       isGet: false,
