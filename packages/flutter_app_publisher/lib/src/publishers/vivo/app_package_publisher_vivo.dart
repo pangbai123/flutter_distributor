@@ -2,13 +2,11 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
-import 'package:dio/dio.dart';
+import 'package:flutter_app_publisher/src/api/app_package_publisher.dart';
 import 'package:flutter_app_publisher/src/publishers/mi/app_package_publisher_mi.dart';
 import 'package:flutter_app_publisher/src/publishers/oppo/app_package_publisher_oppo.dart';
 import 'package:flutter_app_publisher/src/publishers/util.dart';
 import 'package:http/http.dart' as http;
-import 'package:flutter_app_publisher/src/api/app_package_publisher.dart';
-import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 
 const kEnvVivoKey = 'VIVO_ACCESS_KEY';
 const kEnvVivoSecret = 'VIVO_ACCESS_SECRET';
@@ -41,7 +39,7 @@ class AppPackagePublisherVivo extends AppPackagePublisher {
     }
     Map uploadInfo = await uploadApp(
         globalEnvironment[kEnvPkgName]!, file, onPublishProgress);
-    print('上传文件成功：${jsonEncode(uploadInfo)}');
+    // print('上传文件成功：${jsonEncode(uploadInfo)}');
     // //提交审核信息
     Map submitInfo = await submit(uploadInfo, {});
     return PublishResult(url: globalEnvironment[kEnvAppName]! + name + '提交成功}');

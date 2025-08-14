@@ -164,7 +164,7 @@ class AppPackagePublisherHuawei extends AppPackagePublisher {
     );
     if (response.statusCode == 200) {
       String content = await response.body;
-      print('文件上传成功：$content');
+      // print('文件上传成功：$content');
       //刷新文件信息
       var map = await PublishUtil.sendRequest(
         'https://connect-api.cloud.huawei.com/api/publish/v2/app-file-info',
@@ -230,7 +230,7 @@ class AppPackagePublisherHuawei extends AppPackagePublisher {
     );
     if (response.statusCode == 200) {
       String content = await response.body;
-      print('文件上传成功：$content');
+      // print('文件上传成功：$content');
       greenId = uploadMap['objectId'];
     } else {
       // 处理错误的响应

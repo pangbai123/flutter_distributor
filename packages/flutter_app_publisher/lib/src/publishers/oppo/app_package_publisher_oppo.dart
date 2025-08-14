@@ -57,17 +57,17 @@ class AppPackagePublisherOppo extends AppPackagePublisher {
     }
     token = await getToken(client!, access!);
     Map? map = await getUploadAppUrl();
-    print('获取上传地址成功：${jsonEncode(map)}');
+    // print('获取上传地址成功：${jsonEncode(map)}');
     if (map == null) {
       throw PublishError('getUploadAppUrl error');
     }
     String url = map["data"]["upload_url"];
     String sign = map["data"]["sign"];
     Map uploadInfo = await uploadApp(url, sign, file, onPublishProgress);
-    print('上传文件成功：${jsonEncode(uploadInfo)}');
+    // print('上传文件成功：${jsonEncode(uploadInfo)}');
     //获取应用信息
     Map appInfo = await getAppInfo(globalEnvironment[kEnvPkgName]!);
-    print('获取应用信息成功：${jsonEncode(appInfo)}');
+    // print('获取应用信息成功：${jsonEncode(appInfo)}');
     //提交审核信息
     Map submitInfo = await submit(uploadInfo, appInfo);
     return PublishResult(url: globalEnvironment[kEnvAppName]! + name + '提交成功}');
