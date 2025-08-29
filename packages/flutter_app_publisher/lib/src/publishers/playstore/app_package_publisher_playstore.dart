@@ -19,6 +19,7 @@ class AppPackagePublisherPlayStore extends AppPackagePublisher {
 
   late Map<String, String> globalEnvironment;
 
+
   @override
   Future<PublishResult> publish(
     FileSystemEntity fileSystemEntity, {
