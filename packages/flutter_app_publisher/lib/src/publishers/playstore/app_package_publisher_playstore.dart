@@ -27,8 +27,8 @@ class AppPackagePublisherPlayStore extends AppPackagePublisher {
     PublishProgressCallback? onPublishProgress,
   }) async {
     globalEnvironment = environment ?? Platform.environment;
+    //ceshi
     File file = fileSystemEntity as File;
-
     try {
       PublishPlayStoreConfig publishConfig = PublishPlayStoreConfig.parse(
         globalEnvironment,
