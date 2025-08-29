@@ -7,6 +7,7 @@ repository: https://github.com/leanflutter/flutter_distributor/tree/main/package
 environment:
   sdk: ">=2.16.0 <4.0.0"
 
+
 dependencies:
   dio: ^5.3.4
   dio_cookie_manager: 3.1.1
