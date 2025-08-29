@@ -8,6 +8,7 @@ import 'package:googleapis/androidpublisher/v3.dart';
 import 'package:googleapis_auth/auth_io.dart';
 
 const kEnvTrack = 'GOOGLE_PLAYSTORE_TRACK';
+const kEnvAppName = 'APP_NAME';
 
 class AppPackagePublisherPlayStore extends AppPackagePublisher {
   @override
@@ -20,96 +21,78 @@ class AppPackagePublisherPlayStore extends AppPackagePublisher {
 
   @override
   Future<PublishResult> publish(
-      FileSystemEntity fileSystemEntity, {
-        Map<String, String>? environment,
-        Map<String, dynamic>? publishArguments,
-        PublishProgressCallback? onPublishProgress,
-      }) async {
+    FileSystemEntity fileSystemEntity, {
+    Map<String, String>? environment,
+    Map<String, dynamic>? publishArguments,
+    PublishProgressCallback? onPublishProgress,
+  }) async {
     globalEnvironment = environment ?? Platform.environment;
+    //ceshi
     File file = fileSystemEntity as File;
-    PublishPlayStoreConfig publishConfig = PublishPlayStoreConfig.parse(
-      globalEnvironment,
-      {
-        "package-name": globalEnvironment[kEnvPkgName],
-        "track": globalEnvironment[kEnvTrack]
-      },
-    );
+    try {
+      PublishPlayStoreConfig publishConfig = PublishPlayStoreConfig.parse(
+        globalEnvironment,
+        {
+          "package-name": globalEnvironment[kEnvPkgName],
+          "track": globalEnvironment[kEnvTrack]
+        },
+      );
 
-    String jsonString = File(publishConfig.credentialsFile).readAsStringSync();
-    ServiceAccountCredentials serviceAccountCredentials =
-    ServiceAccountCredentials.fromJson(json.decode(jsonString));
+      String jsonString =
+          File(publishConfig.credentialsFile).readAsStringSync();
+      ServiceAccountCredentials serviceAccountCredentials =
+          ServiceAccountCredentials.fromJson(json.decode(jsonString));
 
-    final client = await clientViaServiceAccount(
-      serviceAccountCredentials,
-      [
-        AndroidPublisherApi.androidpublisherScope,
-      ],
-    );
+      final client = await clientViaServiceAccount(
+        serviceAccountCredentials,
+        [AndroidPublisherApi.androidpublisherScope],
+      );
 
-    final AndroidPublisherApi publisherApi = AndroidPublisherApi(client);
+      final AndroidPublisherApi publisherApi = AndroidPublisherApi(client);
 
-    // Step 1: Create a new edit
-    AppEdit appEdit = await publisherApi.edits.insert(
-      AppEdit(),
-      publishConfig.packageName,
-    );
+      AppEdit appEdit = await publisherApi.edits.insert(
+        AppEdit(),
+        publishConfig.packageName,
+      );
 
-    // Step 2: Upload the APK or AAB
-    Media uploadMedia = Media(file.openRead(), file.lengthSync());
-    await publisherApi.edits.bundles.upload(
-      publishConfig.packageName,
-      appEdit.id!,
-      uploadMedia: uploadMedia,
-    );
+      Media uploadMedia = Media(file.openRead(), file.lengthSync());
 
-    // Step 3: Create the localized release notes (multi-language support)
-    List<LocalizedText> releaseNotes = [
-      LocalizedText(
-        language: 'zh-CN',  // Simplified Chinese
-        text: globalEnvironment[kEnvUpdateLog],  // Update log passed via environment
-      ),
-      // You can add more languages here
-    ];
+      final bundle = await publisherApi.edits.bundles.upload(
+        publishConfig.packageName,
+        appEdit.id!,
+        uploadMedia: uploadMedia,
+      );
 
-    // Step 4: Create the TrackRelease object
-    TrackRelease trackRelease = TrackRelease(
-      status: 'completed',  // Mark as completed to indicate it's ready for release
-      releaseNotes: releaseNotes,
-    );
-
-    // Step 5: Create the Track object
-    Track track = Track(
-      track: publishConfig.track,  // e.g., 'production', 'beta', 'alpha'
-      releases: [trackRelease],
-    );
-
-    // Step 6: Update the track with the new release
-    if (publishConfig.track != null) {
-      try {
+      if (publishConfig.track != null) {
+        final track = Track(
+          track: publishConfig.track,
+          releases: [
+            TrackRelease(
+              versionCodes: [bundle.versionCode!.toString()],
+              status: 'completed',
+            ),
+          ],
+        );
         await publisherApi.edits.tracks.update(
           track,
           publishConfig.packageName,
           appEdit.id!,
           publishConfig.track!,
         );
-      } on Exception catch (e) {
-        print('Error updating track: $e');
-        throw Exception('Failed to update track: $e');
       }
-    }
 
-    // Step 7: Commit the changes (this actually publishes the version)
-    try {
       await publisherApi.edits.commit(
-        publishConfig.packageName!,
+        publishConfig.packageName,
         appEdit.id!,
       );
-    } catch (e) {
-      throw Exception('Failed to commit app edit: $e');
-    }
 
-    // Return the URL of the app in the Play Store
-    String appUrl = 'https://play.google.com/store/apps/details?id=${publishConfig.packageName}';
-    return PublishResult(url: appUrl);
+      return PublishResult(
+        url: '${globalEnvironment[kEnvAppName]} $name 提交成功',
+      );
+    } catch (e, stack) {
+      // 打印调试信息
+      print('发布失败: $e\n$stack');
+      throw PublishError('${globalEnvironment[kEnvAppName]} $name 提交失败: $e');
+    }
   }
 }
