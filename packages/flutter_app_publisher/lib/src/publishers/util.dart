@@ -26,6 +26,7 @@ class PublishUtil {
     bool isGet = true,
     bool isFrom = true,
     bool isPut = false,
+    bool isDelete = false,
   }) async {
     Response response;
     if (isFrom) {
@@ -42,7 +43,12 @@ class PublishUtil {
             data: params,
             queryParameters: queryParams,
             options: Options()..headers = header);
-      } else {
+      } else if (isDelete) {
+        response = await _dio.delete<String>(requestUrl,
+            data: params,
+            queryParameters: queryParams,
+            options: Options()..headers = header);
+      }   else {
         response = await _dio.post<String>(requestUrl,
             data: params,
             queryParameters: queryParams,
@@ -57,9 +63,12 @@ class PublishUtil {
     if ((response.statusCode ?? 0) >= 400) {
       throw Exception('${response.statusCode} ${response.data}');
     }
-    if (response.data == null) {
+
+    // 处理 204 No Content 或空字符串
+    if (response.data == null || response.data.toString().trim().isEmpty) {
       return null;
     }
+
     return jsonDecode(response.data);
   }
 
