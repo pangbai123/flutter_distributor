@@ -9,7 +9,7 @@ import 'package:googleapis_auth/auth_io.dart';
 
 const kEnvTrack = 'GOOGLE_PLAYSTORE_TRACK';
 const kEnvAppName = 'APP_NAME';
-const kEnvReleaseNotes ='UPDATE_RELEASE_NOTES_FILE';
+const kEnvReleaseNotes ='GOOGLE_NOTES_FILE';
 
 class AppPackagePublisherPlayStore extends AppPackagePublisher {
   @override

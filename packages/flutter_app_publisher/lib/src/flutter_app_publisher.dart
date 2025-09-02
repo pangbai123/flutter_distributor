@@ -9,6 +9,7 @@ import 'package:flutter_app_publisher/src/publishers/honor/app_package_publisher
 import 'package:flutter_app_publisher/src/publishers/huawei/app_package_publisher_huawei.dart';
 import 'package:flutter_app_publisher/src/publishers/mi/app_package_publisher_mi.dart';
 import 'package:flutter_app_publisher/src/publishers/oppo/app_package_publisher_oppo.dart';
+import 'package:flutter_app_publisher/src/publishers/playstore/app_package_publisher_playstore.dart';
 import 'package:flutter_app_publisher/src/publishers/publishers.dart';
 import 'package:flutter_app_publisher/src/publishers/samsung/app_package_publisher_samsung.dart';
 import 'package:flutter_app_publisher/src/publishers/tencent/app_package_publisher_tencent.dart';
