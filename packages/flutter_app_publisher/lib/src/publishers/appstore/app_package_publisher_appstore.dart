@@ -3,10 +3,16 @@ import 'dart:io';
 
 import 'package:flutter_app_publisher/src/api/app_package_publisher.dart';
 import 'package:flutter_app_publisher/src/publishers/appstore/publish_appstore_config.dart';
+import 'package:flutter_app_publisher/src/publishers/oppo/app_package_publisher_oppo.dart';
 import 'package:http/http.dart' as http;
 import 'package:jose/jose.dart';
+import 'package:shell_executor/shell_executor.dart';
 
-import '../oppo/app_package_publisher_oppo.dart';
+const kEnvReleaseNotes = 'APPSTORE_NOTES_FILE';
+const kAppID = "APPSTORE_APP_ID";
+const kKeyId = "APPSTORE_APIKEY";
+const kIssuerId = "APPSTORE_APIISSUER";
+const kPrivateKey = "APPSTORE_PRIVATEKEY";
 
 class AppPackagePublisherAppStore extends AppPackagePublisher {
   @override
@@ -15,7 +21,7 @@ class AppPackagePublisherAppStore extends AppPackagePublisher {
   @override
   List<String> get supportedPlatforms => ['ios', 'macos'];
 
-  late Map<String, String> globalEnvironment;
+  late Map<String, dynamic> globalEnvironment;
   late String token;
 
   @override
@@ -25,50 +31,97 @@ class AppPackagePublisherAppStore extends AppPackagePublisher {
     Map<String, dynamic>? publishArguments,
     PublishProgressCallback? onPublishProgress,
   }) async {
+    globalEnvironment = environment ?? Platform.environment;
     File file = fileSystemEntity as File;
 
-    globalEnvironment = environment ?? Platform.environment;
+    final releaseNotesMap;
+    try {
+      final jsonFile = (environment ?? Platform.environment)[kEnvReleaseNotes];
+      releaseNotesMap = await loadReleaseNotes(jsonFile);
+    } catch (e) {
+      throw PublishError('$name 提交失败: $e');
+    }
 
-    // Get type (iOS or macOS)
+    // 1. 判断平台
     String type = file.path.endsWith('.ipa') ? 'ios' : 'osx';
 
-    // Parse configuration
+    // 2. 获取配置
     PublishAppStoreConfig publishConfig =
         PublishAppStoreConfig.parse(environment);
 
-    String? version = globalEnvironment[kEnvVersionName]; // Default version
-    String? whatsNew = globalEnvironment[kEnvUpdateLog]; // Default update log
-
-    print('Publishing App - Version: $version');
-    print('Update Notes: $whatsNew');
-
-    token = generateAppStoreToken(
-      keyId: "1P6B1OWVK0KQ",
-      issuerId: "4d502497-da44-487f-8ef8-ac75d3b1f7b3",
-      privateKey: '''
------BEGIN PRIVATE KEY-----
-MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQghdwIlLX2e8Y0aZi1
-OGBLbhxWxQ1GKPnnO6xrTVz4jiShRANCAASU4Y+HmT8xC/aCcLpxSxXpAdS6/nXj
-wsZo+nVtG5vgks4RPUlZzvmZdtmx06T8hCSRoCsyfbxKwmqEI8EgWRgg
------END PRIVATE KEY-----
-''',
+    // 3. 上传 IPA
+    ProcessResult processResult = await $(
+      'xcrun',
+      [
+        'altool',
+        '--upload-app',
+        '--file',
+        file.path,
+        '--type',
+        type,
+        ...publishConfig.toAppStoreCliDistributeArgs(),
+      ],
     );
 
-    try {
-      // 1. 上传 IPA 文件到 App Store Connect
-      final ipaFileUrl = await _uploadToAppStoreConnect(file, type);
+    if (processResult.exitCode != 0) {
+      throw PublishError(
+        '${processResult.exitCode} - Upload of appstore failed: ${processResult.stderr}',
+      );
+    }
+    processResult.toString();
+    final stdoutText = processResult.stdout.toString();
+    print('Appstore 上传IPA包成功: $stdoutText');
 
-      // 2. 更新应用元数据（版本和更新日志）
-      await _updateAppVersionAndMetadata(version!, whatsNew!);
+    // 5. 生成 App Store Connect API Token
+    token = generateAppStoreToken(
+      keyId: globalEnvironment[kKeyId], // 替换成你的 Key ID
+      issuerId: globalEnvironment[kIssuerId], // 替换成你的 Issuer ID
+      privateKey: globalEnvironment[kPrivateKey],
+    );
+
+
+    // 6. 获取环境变量中的版本号和更新日志
+    String? version = globalEnvironment[kEnvVersionName];
+    if (version == null || releaseNotesMap == null) {
+      throw PublishError('缺少版本号或更新日志信息');
+    }
+
+    try {
+      // 7. 创建新版本并更新 release notes
+      await _createOrUpdateVersionWithLocales(
+          globalEnvironment[kAppID], version, releaseNotesMap);
 
       return PublishResult(
-        url: ipaFileUrl,
+        url: 'https://appstoreconnect.apple.com/apps',
       );
     } catch (e) {
       throw PublishError('Failed to publish app: $e');
     }
   }
 
+  Future<Map<String, String>> loadReleaseNotes(String? jsonFile) async {
+    if (jsonFile == null || jsonFile.isEmpty) {
+      throw Exception("Release notes JSON file path is not set");
+    }
+
+    final file = File(jsonFile);
+
+    if (!await file.exists()) {
+      throw Exception("Release notes JSON file not found at: $jsonFile");
+    }
+
+    final content = await file.readAsString();
+    final Map<String, dynamic> rawMap = jsonDecode(content);
+
+    // 转成 Map<String, String>
+    final Map<String, String> releaseNotesMap = rawMap.map((key, value) {
+      return MapEntry(key, value.toString());
+    });
+
+    return releaseNotesMap;
+  }
+
+  /// 生成 JWT Token
   String generateAppStoreToken({
     required String keyId,
     required String issuerId,
@@ -78,7 +131,8 @@ wsZo+nVtG5vgks4RPUlZzvmZdtmx06T8hCSRoCsyfbxKwmqEI8EgWRgg
     final payload = {
       'iss': issuerId,
       'iat': currentTime,
-      'exp': currentTime + (20 * 60), // Token valid for 20 minutes
+      'exp': currentTime + (20 * 60),
+      'aud': 'appstoreconnect-v1'
     };
 
     final builder = JsonWebSignatureBuilder()
@@ -93,67 +147,146 @@ wsZo+nVtG5vgks4RPUlZzvmZdtmx06T8hCSRoCsyfbxKwmqEI8EgWRgg
     return jws.toCompactSerialization();
   }
 
-
-  // 上传 .ipa 文件到 App Store Connect
-  Future<String> _uploadToAppStoreConnect(File ipaFile, String type) async {
-    final String apiUrl =
-        'https://api.appstoreconnect.apple.com/v1/appStoreVersions';
-
-    final Map<String, String> headers = {
-      'Authorization': 'Bearer $token',
-      'Content-Type': 'application/json',
-    };
-
-    // 上传 IPA 文件
-    final request = http.MultipartRequest(
-      'POST',
-      Uri.parse(apiUrl),
+  /// 创建或更新 App Store 版本，并更新多语言 release notes
+  Future<void> _createOrUpdateVersionWithLocales(
+      String appId, String version, Map<String, String> whatsNewMap) async {
+    // 1. 获取 App 的所有版本
+    final versionsResp = await http.get(
+      Uri.parse(
+          'https://api.appstoreconnect.apple.com/v1/apps/$appId/appStoreVersions?fields[appStoreVersions]=versionString&limit=2'),
+      headers: {'Authorization': 'Bearer $token'},
     );
-    request.headers.addAll(headers);
-    request.files.add(await http.MultipartFile.fromPath('file', ipaFile.path));
 
-    final response = await request.send();
-    if (response.statusCode == 201) {
-      // 解析返回的 JSON 响应并获取文件上传成功后的 URL
-      final responseBody = await response.stream.bytesToString();
-      final Map<String, dynamic> jsonResponse = jsonDecode(responseBody);
-      return jsonResponse['data']['url']; // 返回文件 URL
-    } else {
-      throw Exception('Failed to upload IPA file: ${response.statusCode}');
+    if (versionsResp.statusCode != 200) {
+      throw Exception('Failed to list app versions: ${versionsResp.body}');
     }
-  }
 
-  // 更新应用版本和元数据（版本号、更新日志）
-  Future<void> _updateAppVersionAndMetadata(
-      String version, String whatsNew) async {
-    final String apiUrl =
-        'https://api.appstoreconnect.apple.com/v1/apps/1588193025/appStoreVersions';
+    final data = jsonDecode(versionsResp.body)['data'] as List;
+    String? versionId;
 
-    final Map<String, String> headers = {
-      'Authorization': 'Bearer $token',
-      'Content-Type': 'application/json',
-    };
+    // 2. 查找是否已存在指定版本号
+    for (var ver in data) {
+      if (ver['attributes']['versionString'] == version) {
+        versionId = ver['id'];
+        break;
+      }
+    }
 
-    final Map<String, dynamic> body = {
-      'data': {
-        'type': 'appStoreVersions',
-        'attributes': {
-          'version': version,
-          'releaseNotes': whatsNew,
+    // 3. 如果不存在，则创建新版本
+    if (versionId == null) {
+      final createResp = await http.post(
+        Uri.parse('https://api.appstoreconnect.apple.com/v1/appStoreVersions'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'data': {
+            'type': 'appStoreVersions',
+            'attributes': {
+              'platform': 'IOS',
+              'versionString': version,
+              'releaseType': 'AFTER_APPROVAL',
+            },
+            'relationships': {
+              'app': {
+                'data': {'type': 'apps', 'id': appId}
+              }
+            }
+          }
+        }),
+      );
+
+      if (createResp.statusCode != 201) {
+        throw Exception('Failed to create app version: ${createResp.body}');
+      }
+
+      versionId = jsonDecode(createResp.body)['data']['id'];
+    }
+
+    // 4. 获取已有版本的所有本地化
+    final localizationsResp = await http.get(
+      Uri.parse(
+          'https://api.appstoreconnect.apple.com/v1/appStoreVersions/$versionId/appStoreVersionLocalizations?limit=50'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+
+    if (localizationsResp.statusCode != 200) {
+      throw Exception('Failed to get localizations: ${localizationsResp.body}');
+    }
+
+    final existingLocalizations =
+        jsonDecode(localizationsResp.body)['data'] as List;
+
+    // 5. 遍历传入的 whatsNewMap，更新或创建本地化
+    for (var entry in whatsNewMap.entries) {
+      final locale = entry.key;
+      final whatsNew = entry.value;
+
+      // 查找该语言是否已有 localization
+      final existingLoc = existingLocalizations.firstWhere(
+        (loc) => loc['attributes']['locale'] == locale,
+        orElse: () => null,
+      );
+
+      if (existingLoc != null) {
+        // 更新已有 localization
+        final patchResp = await http.patch(
+          Uri.parse(
+              'https://api.appstoreconnect.apple.com/v1/appStoreVersionLocalizations/${existingLoc['id']}'),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode({
+            'data': {
+              'type': 'appStoreVersionLocalizations',
+              'id': existingLoc['id'],
+              'attributes': {
+                'whatsNew': whatsNew,
+              }
+            }
+          }),
+        );
+
+        if (patchResp.statusCode == 200) {
+          print('[$locale] Release notes updated successfully.');
+        } else {
+          print(
+              '[$locale] Failed to update release notes: ${patchResp.statusCode} ${patchResp.body}');
+        }
+      } else {
+        // 创建新的 localization
+        final createLocResp = await http.post(
+          Uri.parse(
+              'https://api.appstoreconnect.apple.com/v1/appStoreVersionLocalizations'),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode({
+            'data': {
+              'type': 'appStoreVersionLocalizations',
+              'attributes': {
+                'locale': locale,
+                'whatsNew': whatsNew,
+              },
+              'relationships': {
+                'appStoreVersion': {
+                  'data': {'type': 'appStoreVersions', 'id': versionId}
+                }
+              }
+            }
+          }),
+        );
+
+        if (createLocResp.statusCode == 201) {
+          print('[$locale] Release notes created successfully.');
+        } else {
+          print(
+              '[$locale] Failed to create release notes: ${createLocResp.statusCode} ${createLocResp.body}');
         }
       }
-    };
-
-    final response = await http.post(
-      Uri.parse(apiUrl),
-      headers: headers,
-      body: jsonEncode(body),
-    );
-
-    if (response.statusCode == 200) {
-      print('App version and metadata updated successfully.');
-    } else {
-      throw Exception('Failed to update app version: ${response.statusCode}');
     }
   }
 }
