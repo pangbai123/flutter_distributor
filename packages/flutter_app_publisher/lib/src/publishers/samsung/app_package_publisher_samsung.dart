@@ -91,8 +91,7 @@ class AppPackagePublisherSamsung extends AppPackagePublisher {
       await addBinary(appInfo["contentId"], binaryParam);
     } else {
       Map<String, dynamic> binaryMap = appInfo["binaryList"][0];
-      // binaryParam['binarySeq'] = binaryMap['binarySeq'];
-      // await deleteBinary(appInfo["contentId"], binaryMap['binarySeq']);
+      await deleteBinary(appInfo["contentId"], binaryMap['binarySeq']);
       await addBinary(appInfo["contentId"], binaryParam);
       // await modifyBinary(appInfo["contentId"], binaryMap['binarySeq'],binaryParam,);
     }
@@ -132,7 +131,7 @@ class AppPackagePublisherSamsung extends AppPackagePublisher {
       'contentId':contentId,
       'binarySeq':binarySeq,
     };
-    Map? response = await PublishUtil.sendRequest(modifyBinaryUrl, params, header: header,isGet: false, isDelete: true,queryParams:params);
+    Map? response = await PublishUtil.sendRequest(modifyBinaryUrl, null, header: header,isGet: false, isDelete: true,queryParams:params);
     if (response != null && response["errorCode"] != null) {
       throw PublishError("修改二进制失败: ${response["errorCode"]} ${response["errorMsg"]}");
     }
