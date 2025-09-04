@@ -29,11 +29,11 @@ class AppPackagePublisherAppStore extends AppPackagePublisher {
 
   @override
   Future<PublishResult> publish(
-    FileSystemEntity fileSystemEntity, {
-    Map<String, String>? environment,
-    Map<String, dynamic>? publishArguments,
-    PublishProgressCallback? onPublishProgress,
-  }) async {
+      FileSystemEntity fileSystemEntity, {
+        Map<String, String>? environment,
+        Map<String, dynamic>? publishArguments,
+        PublishProgressCallback? onPublishProgress,
+      }) async {
     globalEnvironment = environment ?? Platform.environment;
     File file = fileSystemEntity as File;
 
@@ -48,7 +48,7 @@ class AppPackagePublisherAppStore extends AppPackagePublisher {
 
     String type = file.path.endsWith('.ipa') ? 'ios' : 'osx';
     PublishAppStoreConfig publishConfig =
-        PublishAppStoreConfig.parse(environment);
+    PublishAppStoreConfig.parse(environment);
 
     // 生成 API Token
     token = generateAppStoreToken(
@@ -88,27 +88,24 @@ class AppPackagePublisherAppStore extends AppPackagePublisher {
       }
 
       // 创建或获取版本
-      String versionId =
-          await _createOrUpdateVersion(globalEnvironment[kAppID], version);
+      String versionId = await _createOrUpdateVersion(globalEnvironment[kAppID], version);
 
-      // // 更新多语言 release notes
+      // 更新多语言 release notes
       await _updateReleaseNotes(versionId, releaseNotesMap);
-      //
-      // // 关联构建到版本
+
+      // 关联构建到版本
       await _associateBuildToVersion(versionId, buildId);
-      //
-      // // 设置加密合规
+
+      // 设置加密合规
       await setEncryptionCompliance(buildId);
 
-      //设置分阶段发布
-      await submitForReviewPhasedRelease(appStoreVersionId:versionId,phasedRelease:false);
 
+      // 确保 review submission 存在并添加版本
       await ensureReviewSubmissionForVersion(
         appId: globalEnvironment[kAppID],
-        appStoreVersionId: versionId, // 你 _createOrUpdateVersion 返回的 id
+        appStoreVersionId: versionId,
         platform: 'IOS',
       );
-
 
       return PublishResult(
         url: 'https://appstoreconnect.apple.com/apps',
@@ -161,17 +158,11 @@ class AppPackagePublisherAppStore extends AppPackagePublisher {
   }
 
   /// 查找是否已有指定版本 + 构建号
-  /// 查找已有版本和对应的构建号
-  /// 如果找到与期望版本号和构建号匹配的构建，直接返回 buildId
-  /// 否则返回 null（需要上传 IPA）
-  /// 找到与指定 appId/version/expectedBuild 匹配且 processingState 为 VALID 的 buildId
-  /// 返回 buildId 或 null
   Future<String?> _findExistingBuild(
       String appId,
       String version,
       String expectedBuild,
       ) async {
-    // 1) 先获取 appStoreVersion id（匹配 versionString）
     final versionsResp = await http.get(
       Uri.parse(
           'https://api.appstoreconnect.apple.com/v1/apps/$appId/appStoreVersions?fields[appStoreVersions]=versionString&limit=50'),
@@ -199,7 +190,6 @@ class AppPackagePublisherAppStore extends AppPackagePublisher {
 
     print('ℹ️ 找到 appStoreVersion id=$versionId 对应 version=$version');
 
-    // helper：检查一个 builds 列表里是否有匹配的 build
     String? _findInBuildsList(List builds) {
       for (var build in builds) {
         final attrs = build['attributes'] as Map<String, dynamic>? ?? {};
@@ -213,7 +203,6 @@ class AppPackagePublisherAppStore extends AppPackagePublisher {
       return null;
     }
 
-    // 2) 优先：按 appStoreVersion 过滤 builds
     final buildsByVersionUrl = Uri.https('api.appstoreconnect.apple.com', '/v1/builds', {
       'filter[appStoreVersion]': versionId,
       'limit': '50',
@@ -229,7 +218,6 @@ class AppPackagePublisherAppStore extends AppPackagePublisher {
       print('⚠️ 按 appStoreVersion 查询 builds 返回非200: ${buildsByVersionResp.statusCode} ${buildsByVersionResp.body}');
     }
 
-    // 3) 备用：尝试按 preReleaseVersion 过滤（有时 build 被关联为 pre-release）
     final preResp = await http.get(
       Uri.parse('https://api.appstoreconnect.apple.com/v1/preReleaseVersions?filter[app]=$appId&filter[version]=$version'),
       headers: {'Authorization': 'Bearer $token'},
@@ -263,11 +251,8 @@ class AppPackagePublisherAppStore extends AppPackagePublisher {
     return null;
   }
 
-
-  /// 上传 IPA
   Future<void> _uploadIpa(
       File file, String type, PublishAppStoreConfig config) async {
-    // 这里用 xcrun altool 上传 IPA 的逻辑
     ProcessResult processResult = await $(
       'xcrun',
       [
@@ -284,7 +269,6 @@ class AppPackagePublisherAppStore extends AppPackagePublisher {
     print('✅ 上传 IPA 成功: ${file.path}');
   }
 
-  /// 等待指定构建号的 build 处理完成
   Future<String> _waitForBuildProcessed(
       String version, String expectedBuild) async {
     String? preReleaseVersionId;
@@ -330,7 +314,6 @@ class AppPackagePublisherAppStore extends AppPackagePublisher {
     }
   }
 
-  /// 创建或获取 App Store 版本
   Future<String> _createOrUpdateVersion(String appId, String version) async {
     final versionsResp = await http.get(
       Uri.parse(
@@ -378,7 +361,6 @@ class AppPackagePublisherAppStore extends AppPackagePublisher {
     return versionId;
   }
 
-  /// 更新多语言 Release Notes
   Future<void> _updateReleaseNotes(
       String versionId, Map<String, String> whatsNewMap) async {
     final localizationsResp = await http.get(
@@ -390,14 +372,14 @@ class AppPackagePublisherAppStore extends AppPackagePublisher {
       throw Exception('获取本地化失败: ${localizationsResp.body}');
 
     final existingLocalizations =
-        jsonDecode(localizationsResp.body)['data'] as List;
+    jsonDecode(localizationsResp.body)['data'] as List;
 
     for (var entry in whatsNewMap.entries) {
       final locale = entry.key;
       final whatsNew = entry.value;
 
       final existingLoc = existingLocalizations.firstWhere(
-        (loc) => loc['attributes']['locale'] == locale,
+            (loc) => loc['attributes']['locale'] == locale,
         orElse: () => null,
       );
 
@@ -445,7 +427,6 @@ class AppPackagePublisherAppStore extends AppPackagePublisher {
     }
   }
 
-  /// 关联构建到版本
   Future<void> _associateBuildToVersion(
       String versionId, String buildId) async {
     final resp = await http.patch(
@@ -471,10 +452,9 @@ class AppPackagePublisherAppStore extends AppPackagePublisher {
     print('✅ 构建已关联到版本');
   }
 
-  /// 设置加密合规
   Future<void> setEncryptionCompliance(String buildId) async {
     final buildUrl =
-        Uri.https('api.appstoreconnect.apple.com', '/v1/builds/$buildId');
+    Uri.https('api.appstoreconnect.apple.com', '/v1/builds/$buildId');
     final resp = await http.get(buildUrl, headers: {
       'Authorization': 'Bearer $token',
       'Content-Type': 'application/json'
@@ -482,7 +462,7 @@ class AppPackagePublisherAppStore extends AppPackagePublisher {
     if (resp.statusCode != 200) throw Exception("获取构建信息失败: ${resp.body}");
 
     final currentValue = jsonDecode(resp.body)['data']?['attributes']
-        ?['usesNonExemptEncryption'];
+    ?['usesNonExemptEncryption'];
     if (currentValue == false) {
       print("⚠️ 加密合规已经设置为 false，跳过更新");
       return;
@@ -507,10 +487,9 @@ class AppPackagePublisherAppStore extends AppPackagePublisher {
     }
   }
 
-  /// 阶段发布方式
   Future<void> submitForReviewPhasedRelease({
     required String appStoreVersionId,
-    bool phasedRelease = false, // 是否开启阶段发布
+    bool phasedRelease = false,
   }) async {
     try {
       final url = Uri.https(
@@ -549,15 +528,6 @@ class AppPackagePublisherAppStore extends AppPackagePublisher {
     }
   }
 
-
-  /// 确保 Review Submission 存在，并添加 appStoreVersion 进去
-
-
-  /// 返回一个简单的 tuple（Map）表示匹配结果：
-  /// {
-  ///   'submissionId': '...',     // submission id (如果找到或创建)
-  ///   'itemId': '...'            // 如果已存在 item 则返回 itemId，否则 null
-  /// }
   Future<Map<String?, String?>> _findExistingSubmissionForVersion({
     required String appId,
     required String appStoreVersionId,
@@ -568,7 +538,7 @@ class AppPackagePublisherAppStore extends AppPackagePublisher {
     );
 
     final resp =
-        await http.get(url, headers: {'Authorization': 'Bearer $token'});
+    await http.get(url, headers: {'Authorization': 'Bearer $token'});
     if (resp.statusCode != 200) {
       print(
           '⚠️ 查询 app 的 reviewSubmissions 失败: ${resp.statusCode} ${resp.body}');
@@ -578,19 +548,16 @@ class AppPackagePublisherAppStore extends AppPackagePublisher {
     final body = jsonDecode(resp.body);
     final List submissions = (body['data'] ?? []) as List;
 
-    // 遍历 submission，检查每个 submission 的 items 是否包含我们的版本
     for (var s in submissions) {
       final submissionId = s['id'] as String?;
-      // 获取 items
       final itemsUrl = Uri.https(
         'api.appstoreconnect.apple.com',
         '/v1/reviewSubmissions/$submissionId/items',
       );
 
       final itemsResp =
-          await http.get(itemsUrl, headers: {'Authorization': 'Bearer $token'});
+      await http.get(itemsUrl, headers: {'Authorization': 'Bearer $token'});
       if (itemsResp.statusCode != 200) {
-        // 继续检查下一个 submission（不要因为一个 items 请求失败就退出）
         print(
             '⚠️ 获取 submission items 失败（id=$submissionId）: ${itemsResp.statusCode} ${itemsResp.body}');
         continue;
@@ -599,15 +566,13 @@ class AppPackagePublisherAppStore extends AppPackagePublisher {
       final itemsBody = jsonDecode(itemsResp.body);
       final List items = (itemsBody['data'] ?? []) as List;
       for (var item in items) {
-        // item 里通常会有 relationships.appStoreVersion.data.id（如果 item 是 appStoreVersion 类型）
         final rels = item['relationships'] ?? {};
         final appStoreVersionRel = rels['appStoreVersion'];
         final appStoreVersionData =
-            appStoreVersionRel != null ? appStoreVersionRel['data'] : null;
+        appStoreVersionRel != null ? appStoreVersionRel['data'] : null;
         final versionId =
-            appStoreVersionData != null ? appStoreVersionData['id'] : null;
+        appStoreVersionData != null ? appStoreVersionData['id'] : null;
         if (versionId == appStoreVersionId) {
-          // 找到 submission 且包含目标版本
           print(
               '✅ 找到已有 submission ($submissionId) 包含目标版本，itemId=${item['id']}');
           return {
@@ -618,11 +583,9 @@ class AppPackagePublisherAppStore extends AppPackagePublisher {
       }
     }
 
-    // 没有直接包含目标版本的 submission
     return {'submissionId': null, 'itemId': null};
   }
 
-  /// 如果存在 in-progress 的 submission（未完成），返回它的 id，否则返回 null
   Future<String?> _findInProgressSubmission(String appId) async {
     final url = Uri.https(
       'api.appstoreconnect.apple.com',
@@ -630,7 +593,7 @@ class AppPackagePublisherAppStore extends AppPackagePublisher {
     );
 
     final resp =
-        await http.get(url, headers: {'Authorization': 'Bearer $token'});
+    await http.get(url, headers: {'Authorization': 'Bearer $token'});
     if (resp.statusCode != 200) {
       print(
           '⚠️ 查询 app 的 reviewSubmissions 失败: ${resp.statusCode} ${resp.body}');
@@ -642,32 +605,25 @@ class AppPackagePublisherAppStore extends AppPackagePublisher {
 
     for (var s in submissions) {
       final attrs = s['attributes'] ?? {};
-      // 不同 API 版本可能用 'state' 或 'status' 或 'attributes.state' 表示
-      final state =
-          attrs['state'] ?? attrs['status'] ?? attrs['attributes'] ?? null;
+      final stateStr = (attrs['state'] ?? attrs['status'] ?? '') as String;
       final id = s['id'] as String?;
-      // 常见可接受的 state 字符串： "IN_PROGRESS", "DRAFT" 等（以实际返回为准）
-      if (id != null) {
-        final stateStr = (attrs['state'] ?? attrs['status'] ?? '') as String;
-        if (stateStr.toUpperCase().contains('IN_PROGRESS') ||
-            stateStr.toUpperCase().contains('DRAFT') ||
-            stateStr.toUpperCase().contains('OPEN')) {
-          print('⚠️ 发现 in-progress submission: $id state=$stateStr');
-          return id;
-        }
+      if (stateStr.toUpperCase().contains('IN_PROGRESS') ||
+          stateStr.toUpperCase().contains('DRAFT') ||
+          stateStr.toUpperCase().contains('OPEN')) {
+        print('⚠️ 发现 in-progress submission: $id state=$stateStr');
+        return id;
       }
     }
 
     return null;
   }
 
-  /// 创建 reviewSubmission（返回 id 或 null）
   Future<String?> _createReviewSubmission({
     required String appId,
     String platform = 'IOS',
   }) async {
     final url =
-        Uri.https('api.appstoreconnect.apple.com', '/v1/reviewSubmissions');
+    Uri.https('api.appstoreconnect.apple.com', '/v1/reviewSubmissions');
 
     final body = {
       "data": {
@@ -698,13 +654,12 @@ class AppPackagePublisherAppStore extends AppPackagePublisher {
     }
   }
 
-  /// 在指定 submission 下为某个 appStoreVersion 创建 item，返回 itemId 或 null
   Future<String?> _createReviewSubmissionItem({
     required String submissionId,
     required String appStoreVersionId,
   }) async {
     final url =
-        Uri.https('api.appstoreconnect.apple.com', '/v1/reviewSubmissionItems');
+    Uri.https('api.appstoreconnect.apple.com', '/v1/reviewSubmissionItems');
 
     final body = {
       "data": {
@@ -737,110 +692,92 @@ class AppPackagePublisherAppStore extends AppPackagePublisher {
     }
   }
 
-  /// PATCH 把 item 提交（submitted=true），返回 true/false
-  Future<bool> _submitReviewSubmissionItem(String itemId) async {
+  Future<bool> submitReviewSubmission(String submissionId) async {
     final url = Uri.https(
-        'api.appstoreconnect.apple.com', '/v1/reviewSubmissionItems/$itemId');
+      'api.appstoreconnect.apple.com',
+      '/v1/reviewSubmissions/$submissionId',
+    );
 
     final body = {
       "data": {
-        "type": "reviewSubmissionItems",
-        "id": itemId,
-        "attributes": {"submitted": true}
+        "type": "reviewSubmissions",
+        "id": submissionId,
+        "attributes": {
+          "submitted": true
+        }
       }
     };
 
-    final resp = await http.patch(url,
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode(body));
+    final resp = await http.patch(
+      url,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode(body),
+    );
 
     if (resp.statusCode == 200) {
-      print('✅ reviewSubmissionItem 已提交（submitted=true）: $itemId');
+      print('✅ Submission 已提交审核: $submissionId');
       return true;
     } else {
-      print('⚠️ 提交 reviewSubmissionItem 失败: ${resp.statusCode} ${resp.body}');
+      print('⚠️ 提交 submission 失败: ${resp.statusCode} ${resp.body}');
       return false;
     }
   }
 
-  /// 主入口：确保 appStoreVersion 被“添加以供审核”并提交该 item
-  Future<void> ensureReviewSubmissionForVersion({
+  /// 确保 Review Submission 存在，并添加 appStoreVersion 进去，同时提交审核
+  /// 返回最终提交的 submissionId（如果成功）
+  Future<String?> ensureReviewSubmissionForVersion({
     required String appId,
     required String appStoreVersionId,
     String platform = 'IOS',
   }) async {
-    // 1) 先查是否已有 submission 且已包含该版本
+    // 1️⃣ 检查目标版本是否已在某个 submission 中
     final found = await _findExistingSubmissionForVersion(
       appId: appId,
       appStoreVersionId: appStoreVersionId,
     );
 
+    String? submissionId;
+
     if (found['submissionId'] != null && found['itemId'] != null) {
-      final subId = found['submissionId']!;
-      final itemId = found['itemId']!;
-      print(
-          '✅ 目标版本已在 submission 中 (submission=$subId, item=$itemId)。尝试确保已提交该 item...');
-      // 检查 item 是否已 submitted（可选：这里直接尝试提交一次）
-      final ok = await _submitReviewSubmissionItem(itemId);
-      if (!ok) {
-        print('⚠️ 尝试提交已存在 item 失败，请在 App Store Connect UI 检查该 submission。');
-      }
-      return;
-    }
-
-    // 2) 如果没有直接包含目标版本，则看是否有 in-progress submission 可以复用
-    String? inProgressSubmissionId = await _findInProgressSubmission(appId);
-    if (inProgressSubmissionId != null) {
-      print('ℹ️ 将目标版本加入现有进行中的 submission: $inProgressSubmissionId');
-      final itemId = await _createReviewSubmissionItem(
-        submissionId: inProgressSubmissionId,
-        appStoreVersionId: appStoreVersionId,
-      );
-      if (itemId != null) {
-        await _submitReviewSubmissionItem(itemId);
-      } else {
-        print('⚠️ 在现有 submission 中添加 item 失败，请手动在 App Store Connect 中添加版本。');
-      }
-      return;
-    }
-
-    // 3) 没有 in-progress submission，尝试创建一个新的 submission
-    final createdSubmissionId =
-        await _createReviewSubmission(appId: appId, platform: platform);
-    if (createdSubmissionId == null) {
-      // 如果创建失败且返回了 409（比如有另一个 submission 正在进行中），尝试再查询一次并复用
-      print('ℹ️ 创建新的 submission 失败，尝试再次查询并复用已存在的 in-progress submission...');
-      inProgressSubmissionId = await _findInProgressSubmission(appId);
+      submissionId = found['submissionId'];
+      print('✅ 目标版本已在 submission 中 (submission=${found['submissionId']}, item=${found['itemId']})');
+    } else {
+      // 2️⃣ 尝试复用现有进行中的 submission
+      String? inProgressSubmissionId = await _findInProgressSubmission(appId);
       if (inProgressSubmissionId != null) {
-        final itemId = await _createReviewSubmissionItem(
-            submissionId: inProgressSubmissionId,
-            appStoreVersionId: appStoreVersionId);
-        if (itemId != null)
-          await _submitReviewSubmissionItem(itemId);
-        else
-          print('⚠️ 在复用的 submission 上创建 item 失败: $inProgressSubmissionId');
-        return;
+        submissionId = inProgressSubmissionId;
+        print('ℹ️ 将目标版本加入现有进行中的 submission: $submissionId');
+        await _createReviewSubmissionItem(
+          submissionId: submissionId,
+          appStoreVersionId: appStoreVersionId,
+        );
+      } else {
+        // 3️⃣ 创建新的 submission
+        submissionId = await _createReviewSubmission(appId: appId, platform: platform);
+        if (submissionId == null) {
+          print('❌ 无法创建或复用 submission，请手动处理。');
+          return null;
+        }
+        await _createReviewSubmissionItem(
+          submissionId: submissionId,
+          appStoreVersionId: appStoreVersionId,
+        );
+        print('✅ reviewSubmissionItem 已创建');
       }
-
-      print('❌ 无法创建或复用 submission，请登录 App Store Connect UI 手动处理。');
-      return;
     }
 
-    // 4) 在新建的 submission 下创建 item 并提交
-    final newItemId = await _createReviewSubmissionItem(
-        submissionId: createdSubmissionId,
-        appStoreVersionId: appStoreVersionId);
-    if (newItemId == null) {
-      print('❌ 在新 submission ($createdSubmissionId) 下创建 item 失败，请手动检查。');
-      return;
-    }
-
-    final submitOk = await _submitReviewSubmissionItem(newItemId);
-    if (!submitOk) {
-      print('❌ 提交新创建的 item 失败，请手动在 App Store Connect 检查。');
+    // 4️⃣ 提交审核
+    final submitted = await submitReviewSubmission(submissionId!);
+    if (submitted) {
+      print('✅ 目标版本已成功提交 App 审核 (submissionId=$submissionId)');
+      return submissionId;
+    } else {
+      print('⚠️ 提交审核失败，请手动检查 submissionId=$submissionId');
+      return null;
     }
   }
+
 }
