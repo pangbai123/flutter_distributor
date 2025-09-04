@@ -17,6 +17,7 @@ const String addBinaryUrl = "$baseUrl/seller/v2/content/binary";
 const String modifyBinaryUrl = "$baseUrl/seller/v2/content/binary";
 const String updateUrl = "$baseUrl/seller/contentUpdate";
 const String submitUrl = "$baseUrl/seller/contentSubmit";
+const String createContentUrl = "$baseUrl/seller/contentCreate";
 
 
 
@@ -74,8 +75,20 @@ class AppPackagePublisherSamsung extends AppPackagePublisher {
       throw PublishError('上传文件信息 为空');
     }
 
+    /// Step 7 更新元数据
+    Map<String, dynamic> params = {
+      "contentId": appInfo["contentId"],
+      "appTitle": appInfo["appTitle"],
+      "defaultLanguageCode": appInfo["defaultLanguageCode"],
+      "paid": appInfo["paid"],
+      "publicationType": appInfo["publicationType"],
+    };
 
     /// Step 5 构造 binary 参数
+    await updateAppInfo(params);
+
+
+    /// Step 6 构造 binary 参数
     Map<String, dynamic> binaryParam = {
       "gms": "N",
       "iapSdk": "N",
@@ -86,30 +99,43 @@ class AppPackagePublisherSamsung extends AppPackagePublisher {
       "filekey": uploadInfo["fileKey"],
     };
 
-    /// Step 6 调用新增 / 修改二进制接口
+    /// Step 7 调用新增 / 修改二进制接口
     if ((appInfo["binaryList"] as List?)?.isEmpty ?? true) {
       await addBinary(appInfo["contentId"], binaryParam);
     } else {
-      Map<String, dynamic> binaryMap = appInfo["binaryList"][0];
-      await deleteBinary(appInfo["contentId"], binaryMap['binarySeq']);
+      for (int i = 0; i < (appInfo["binaryList"].length ?? 0); i++) {
+        Map<String, dynamic> binaryMap = appInfo["binaryList"][i];
+        await deleteBinary(appInfo["contentId"], binaryMap['binarySeq']);
+      }
       await addBinary(appInfo["contentId"], binaryParam);
       // await modifyBinary(appInfo["contentId"], binaryMap['binarySeq'],binaryParam,);
     }
-
-    /// Step 7 更新元数据
-    Map<String, dynamic> params = {
-      "contentId": appInfo["contentId"],
-      "appTitle": appInfo["appTitle"],
-      "defaultLanguageCode": appInfo["defaultLanguageCode"],
-      "paid": appInfo["paid"],
-      "publicationType": appInfo["publicationType"],
-    };
-    await updateAppInfo(params);
 
     /// Step 8 提交审核
     await submit();
 
     return PublishResult(url: "${globalEnvironment[kEnvAppName]} $name 提交成功");
+  }
+
+
+  /// 创建 App 内容
+  Future<String> createContent() async {
+    Map<String, String> header = getHeaderPrams();
+    final resp = await http.post(Uri.parse(createContentUrl),
+        headers: header,
+        body: jsonEncode({
+          "appTitle": globalEnvironment[kEnvAppName],
+          "defaultLanguageCode": "en",
+          "packageName": globalEnvironment[kEnvPkgName],
+          "publicationType": "PAID",
+          "paid": "N",
+        }));
+    if (resp.statusCode == 200) {
+      final data = jsonDecode(resp.body);
+      return data["createdItem"]["contentId"];
+    } else {
+      throw Exception("创建 App 内容失败: ${resp.body}");
+    }
   }
 
   /// ============ API 调用 ============
@@ -131,7 +157,7 @@ class AppPackagePublisherSamsung extends AppPackagePublisher {
       'contentId':contentId,
       'binarySeq':binarySeq,
     };
-    Map? response = await PublishUtil.sendRequest(modifyBinaryUrl, null, header: header,isGet: false, isDelete: true,queryParams:params);
+    Map? response = await PublishUtil.sendRequest(modifyBinaryUrl, params, header: header,isGet: false, isDelete: true,queryParams:params);
     if (response != null && response["errorCode"] != null) {
       throw PublishError("修改二进制失败: ${response["errorCode"]} ${response["errorMsg"]}");
     }
