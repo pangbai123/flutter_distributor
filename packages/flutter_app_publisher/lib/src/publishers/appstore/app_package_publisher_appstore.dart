@@ -60,7 +60,7 @@ class AppPackagePublisherAppStore extends AppPackagePublisher {
     String? version = globalEnvironment[kEnvVersionName];
     String? expectedBuild = globalEnvironment[kEnvVersionCode]?.toString();
     if (version == null || releaseNotesMap == null || expectedBuild == null) {
-      throw PublishError('缺少版本号、构建号或更新日志信息');
+      throw PublishError('缺少版本号、构建号或更新日志信息version = ${version} releaseNotesMap=${releaseNotesMap} expectedBuild=${expectedBuild}');
     }
 
     try {
@@ -253,6 +253,7 @@ class AppPackagePublisherAppStore extends AppPackagePublisher {
 
   Future<void> _uploadIpa(
       File file, String type, PublishAppStoreConfig config) async {
+    print('✅ 开始上传 IPA ${file.path}');
     ProcessResult processResult = await $(
       'xcrun',
       [
