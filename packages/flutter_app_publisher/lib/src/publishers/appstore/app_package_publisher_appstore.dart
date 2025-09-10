@@ -344,7 +344,8 @@ class AppPackagePublisherAppStore extends AppPackagePublisher {
           'attributes': {
             'platform': 'IOS',
             'versionString': version,
-            'releaseType': 'AFTER_APPROVAL'
+            // 'releaseType': 'AFTER_APPROVAL',//自动发布
+            'releaseType': 'MANUAL'//手动发布
           },
           'relationships': {
             'app': {
