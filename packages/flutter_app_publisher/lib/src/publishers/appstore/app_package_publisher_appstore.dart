@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:ffi';
 import 'dart:io';
 
 import 'package:flutter_app_publisher/src/api/app_package_publisher.dart';
@@ -64,24 +65,23 @@ class AppPackagePublisherAppStore extends AppPackagePublisher {
     }
 
     try {
-      // 检查是否已有对应版本 + 构建号
-      final existingBuildId = await _findExistingBuild(
-          globalEnvironment[kAppID], version, expectedBuild);
+
+      // final existingBuildId = await _findExistingBuild(
+      //     globalEnvironment[kAppID], version, expectedBuild);
 
       String buildId;
-      if (existingBuildId != null) {
-        print('⚠️ 版本 $version 已存在指定构建号 $expectedBuild，跳过上传 IPA');
-        buildId = existingBuildId;
+
+      // 检查是否已有对应版本 + 构建号
+      bool ipaBuildNumRepeat = await _findCurrentIpaBuildNumRepeat(version,expectedBuild);
+
+      if (ipaBuildNumRepeat) {
+        throw PublishError('⚠️ 版本 $version 已存在指定构建号 停止发布上传');
       } else {
         // 上传 IPA
         try {
           await _uploadIpa(file, type, publishConfig);
         } catch (e) {
-          if (e.toString().contains('already exists')) {
-            print('⚠️ IPA 已存在，跳过上传');
-          } else {
-            rethrow;
-          }
+          throw PublishError('上传ipa失败 ${e.toString()}');
         }
         // 等待 build 处理完成
         buildId = await _waitForBuildProcessed(version, expectedBuild);
@@ -141,7 +141,7 @@ class AppPackagePublisherAppStore extends AppPackagePublisher {
     final payload = {
       'iss': issuerId,
       'iat': currentTime,
-      'exp': currentTime + (20 * 60),
+      'exp': currentTime + (30 * 60),
       'aud': 'appstoreconnect-v1'
     };
 
@@ -268,6 +268,39 @@ class AppPackagePublisherAppStore extends AppPackagePublisher {
     );
     if (processResult.exitCode != 0) throw Exception(processResult.stderr);
     print('✅ 上传 IPA 成功: ${file.path}');
+  }
+
+  Future<bool> _findCurrentIpaBuildNumRepeat(String version, String expectedBuild) async {
+    final resp = await http.get(
+      Uri.parse(
+          'https://api.appstoreconnect.apple.com/v1/preReleaseVersions?filter[app]=${globalEnvironment[kAppID]}&filter[version]=$version'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    final data = jsonDecode(resp.body)['data'] as List;
+    if (data.isEmpty) {
+      return false;
+    }
+
+    String preReleaseVersionId = data.first['id'];
+
+    final respBuild = await http.get(
+      Uri.parse(
+          'https://api.appstoreconnect.apple.com/v1/builds?filter[preReleaseVersion]=$preReleaseVersionId'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    final dataBuild = jsonDecode(respBuild.body)['data'] as List;
+    if(dataBuild.isEmpty){
+      return false;
+    }
+    for (var build in dataBuild) {
+      final buildNumber = build['attributes']['version'];
+      final state = build['attributes']['processingState'];
+      print('Build state: $state, buildNumber: $buildNumber, expected: $expectedBuild');
+      if (buildNumber == expectedBuild) {
+        return true;
+      }
+    }
+    return false;
   }
 
   Future<String> _waitForBuildProcessed(
