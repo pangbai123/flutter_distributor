@@ -64,12 +64,18 @@ class AppPackagePublisherAppStore extends AppPackagePublisher {
       throw PublishError('缺少版本号、构建号或更新日志信息version = ${version} releaseNotesMap=${releaseNotesMap} expectedBuild=${expectedBuild}');
     }
 
+    print("token = ${token}====");
+
     try {
 
       // final existingBuildId = await _findExistingBuild(
       //     globalEnvironment[kAppID], version, expectedBuild);
 
       String buildId;
+
+
+      // 创建或获取版本
+      String versionId = await _createOrUpdateVersion(globalEnvironment[kAppID], version);
 
       // 检查是否已有对应版本 + 构建号
       bool ipaBuildNumRepeat = await _findCurrentIpaBuildNumRepeat(version,expectedBuild);
@@ -87,8 +93,7 @@ class AppPackagePublisherAppStore extends AppPackagePublisher {
         buildId = await _waitForBuildProcessed(version, expectedBuild);
       }
 
-      // 创建或获取版本
-      String versionId = await _createOrUpdateVersion(globalEnvironment[kAppID], version);
+
 
       // 更新多语言 release notes
       await _updateReleaseNotes(versionId, releaseNotesMap);
@@ -141,7 +146,7 @@ class AppPackagePublisherAppStore extends AppPackagePublisher {
     final payload = {
       'iss': issuerId,
       'iat': currentTime,
-      'exp': currentTime + (30 * 60),
+      'exp': currentTime + (20 * 60),
       'aud': 'appstoreconnect-v1'
     };
 
@@ -158,98 +163,98 @@ class AppPackagePublisherAppStore extends AppPackagePublisher {
   }
 
   /// 查找是否已有指定版本 + 构建号
-  Future<String?> _findExistingBuild(
-      String appId,
-      String version,
-      String expectedBuild,
-      ) async {
-    final versionsResp = await http.get(
-      Uri.parse(
-          'https://api.appstoreconnect.apple.com/v1/apps/$appId/appStoreVersions?fields[appStoreVersions]=versionString&limit=50'),
-      headers: {'Authorization': 'Bearer $token'},
-    );
-
-    if (versionsResp.statusCode != 200) {
-      throw Exception('获取版本失败: ${versionsResp.body}');
-    }
-
-    final versionsData = jsonDecode(versionsResp.body)['data'] as List;
-    String? versionId;
-    for (var v in versionsData) {
-      final vs = v['attributes']?['versionString']?.toString();
-      if (vs == version) {
-        versionId = v['id'] as String?;
-        break;
-      }
-    }
-
-    if (versionId == null) {
-      print('⚠️ 未找到 appStoreVersion (versionString=$version)');
-      return null;
-    }
-
-    print('ℹ️ 找到 appStoreVersion id=$versionId 对应 version=$version');
-
-    String? _findInBuildsList(List builds) {
-      for (var build in builds) {
-        final attrs = build['attributes'] as Map<String, dynamic>? ?? {};
-        final buildNumber = attrs['version']?.toString() ?? attrs['versionString']?.toString();
-        final state = attrs['processingState']?.toString();
-        print('Found build: id=${build['id']}, version=$buildNumber, state=$state');
-        if (buildNumber == expectedBuild && state == 'VALID') {
-          return build['id'] as String?;
-        }
-      }
-      return null;
-    }
-
-    final buildsByVersionUrl = Uri.https('api.appstoreconnect.apple.com', '/v1/builds', {
-      'filter[appStoreVersion]': versionId,
-      'limit': '50',
-    });
-    final buildsByVersionResp = await http.get(buildsByVersionUrl, headers: {'Authorization': 'Bearer $token'});
-
-    if (buildsByVersionResp.statusCode == 200) {
-      final buildsData = jsonDecode(buildsByVersionResp.body)['data'] as List? ?? [];
-      final found = _findInBuildsList(buildsData);
-      if (found != null) return found;
-      print('ℹ️ 按 appStoreVersion 筛选未找到匹配的 VALID build');
-    } else {
-      print('⚠️ 按 appStoreVersion 查询 builds 返回非200: ${buildsByVersionResp.statusCode} ${buildsByVersionResp.body}');
-    }
-
-    final preResp = await http.get(
-      Uri.parse('https://api.appstoreconnect.apple.com/v1/preReleaseVersions?filter[app]=$appId&filter[version]=$version'),
-      headers: {'Authorization': 'Bearer $token'},
-    );
-
-    if (preResp.statusCode == 200) {
-      final preData = jsonDecode(preResp.body)['data'] as List? ?? [];
-      if (preData.isNotEmpty) {
-        final preId = preData.first['id'];
-        print('ℹ️ 找到 preReleaseVersion id=$preId，尝试按 preReleaseVersion 过滤 builds');
-        final buildsByPreUrl = Uri.https('api.appstoreconnect.apple.com', '/v1/builds', {
-          'filter[preReleaseVersion]': preId,
-          'limit': '50',
-        });
-        final buildsByPreResp = await http.get(buildsByPreUrl, headers: {'Authorization': 'Bearer $token'});
-        if (buildsByPreResp.statusCode == 200) {
-          final buildsData = jsonDecode(buildsByPreResp.body)['data'] as List? ?? [];
-          final found = _findInBuildsList(buildsData);
-          if (found != null) return found;
-          print('ℹ️ 按 preReleaseVersion 筛选也未找到匹配的 VALID build');
-        } else {
-          print('⚠️ 按 preReleaseVersion 查询 builds 返回非200: ${buildsByPreResp.statusCode} ${buildsByPreResp.body}');
-        }
-      } else {
-        print('ℹ️ 未找到 preReleaseVersion');
-      }
-    } else {
-      print('⚠️ 查询 preReleaseVersions 返回非200: ${preResp.statusCode} ${preResp.body}');
-    }
-
-    return null;
-  }
+  // Future<String?> _findExistingBuild(
+  //     String appId,
+  //     String version,
+  //     String expectedBuild,
+  //     ) async {
+  //   final versionsResp = await http.get(
+  //     Uri.parse(
+  //         'https://api.appstoreconnect.apple.com/v1/apps/$appId/appStoreVersions?fields[appStoreVersions]=versionString&limit=50'),
+  //     headers: {'Authorization': 'Bearer $token'},
+  //   );
+  //
+  //   if (versionsResp.statusCode != 200) {
+  //     throw Exception('获取版本失败: ${versionsResp.body}');
+  //   }
+  //
+  //   final versionsData = jsonDecode(versionsResp.body)['data'] as List;
+  //   String? versionId;
+  //   for (var v in versionsData) {
+  //     final vs = v['attributes']?['versionString']?.toString();
+  //     if (vs == version) {
+  //       versionId = v['id'] as String?;
+  //       break;
+  //     }
+  //   }
+  //
+  //   if (versionId == null) {
+  //     print('⚠️ 未找到 appStoreVersion (versionString=$version)');
+  //     return null;
+  //   }
+  //
+  //   print('ℹ️ 找到 appStoreVersion id=$versionId 对应 version=$version');
+  //
+  //   String? _findInBuildsList(List builds) {
+  //     for (var build in builds) {
+  //       final attrs = build['attributes'] as Map<String, dynamic>? ?? {};
+  //       final buildNumber = attrs['version']?.toString() ?? attrs['versionString']?.toString();
+  //       final state = attrs['processingState']?.toString();
+  //       print('Found build: id=${build['id']}, version=$buildNumber, state=$state');
+  //       if (buildNumber == expectedBuild && state == 'VALID') {
+  //         return build['id'] as String?;
+  //       }
+  //     }
+  //     return null;
+  //   }
+  //
+  //   final buildsByVersionUrl = Uri.https('api.appstoreconnect.apple.com', '/v1/builds', {
+  //     'filter[appStoreVersion]': versionId,
+  //     'limit': '50',
+  //   });
+  //   final buildsByVersionResp = await http.get(buildsByVersionUrl, headers: {'Authorization': 'Bearer $token'});
+  //
+  //   if (buildsByVersionResp.statusCode == 200) {
+  //     final buildsData = jsonDecode(buildsByVersionResp.body)['data'] as List? ?? [];
+  //     final found = _findInBuildsList(buildsData);
+  //     if (found != null) return found;
+  //     print('ℹ️ 按 appStoreVersion 筛选未找到匹配的 VALID build');
+  //   } else {
+  //     print('⚠️ 按 appStoreVersion 查询 builds 返回非200: ${buildsByVersionResp.statusCode} ${buildsByVersionResp.body}');
+  //   }
+  //
+  //   final preResp = await http.get(
+  //     Uri.parse('https://api.appstoreconnect.apple.com/v1/preReleaseVersions?filter[app]=$appId&filter[version]=$version'),
+  //     headers: {'Authorization': 'Bearer $token'},
+  //   );
+  //
+  //   if (preResp.statusCode == 200) {
+  //     final preData = jsonDecode(preResp.body)['data'] as List? ?? [];
+  //     if (preData.isNotEmpty) {
+  //       final preId = preData.first['id'];
+  //       print('ℹ️ 找到 preReleaseVersion id=$preId，尝试按 preReleaseVersion 过滤 builds');
+  //       final buildsByPreUrl = Uri.https('api.appstoreconnect.apple.com', '/v1/builds', {
+  //         'filter[preReleaseVersion]': preId,
+  //         'limit': '50',
+  //       });
+  //       final buildsByPreResp = await http.get(buildsByPreUrl, headers: {'Authorization': 'Bearer $token'});
+  //       if (buildsByPreResp.statusCode == 200) {
+  //         final buildsData = jsonDecode(buildsByPreResp.body)['data'] as List? ?? [];
+  //         final found = _findInBuildsList(buildsData);
+  //         if (found != null) return found;
+  //         print('ℹ️ 按 preReleaseVersion 筛选也未找到匹配的 VALID build');
+  //       } else {
+  //         print('⚠️ 按 preReleaseVersion 查询 builds 返回非200: ${buildsByPreResp.statusCode} ${buildsByPreResp.body}');
+  //       }
+  //     } else {
+  //       print('ℹ️ 未找到 preReleaseVersion');
+  //     }
+  //   } else {
+  //     print('⚠️ 查询 preReleaseVersions 返回非200: ${preResp.statusCode} ${preResp.body}');
+  //   }
+  //
+  //   return null;
+  // }
 
   Future<void> _uploadIpa(
       File file, String type, PublishAppStoreConfig config) async {
@@ -319,8 +324,9 @@ class AppPackagePublisherAppStore extends AppPackagePublisher {
             'https://api.appstoreconnect.apple.com/v1/preReleaseVersions?filter[app]=${globalEnvironment[kAppID]}&filter[version]=$version'),
         headers: {'Authorization': 'Bearer $token'},
       );
-      final data = jsonDecode(resp.body)['data'] as List;
-      if (data.isNotEmpty) {
+      var respData = jsonDecode(resp.body)['data'];
+      if (respData != null && (respData as List).isNotEmpty  ) {
+        final data = respData as List;
         preReleaseVersionId = data.first['id'];
       } else {
         print('PreReleaseVersion not found yet, waiting...');
@@ -334,8 +340,9 @@ class AppPackagePublisherAppStore extends AppPackagePublisher {
             'https://api.appstoreconnect.apple.com/v1/builds?filter[preReleaseVersion]=$preReleaseVersionId'),
         headers: {'Authorization': 'Bearer $token'},
       );
-      final data = jsonDecode(resp.body)['data'] as List;
-      if (data.isNotEmpty) {
+      var respData = jsonDecode(resp.body)['data'];
+      if (respData != null && (respData as List).isNotEmpty  ) {
+        final data = respData as List;
         for (var build in data) {
           final buildNumber = build['attributes']['version'];
           final state = build['attributes']['processingState'];
