@@ -276,11 +276,14 @@ class AppPackagePublisherAppStore extends AppPackagePublisher {
           'https://api.appstoreconnect.apple.com/v1/preReleaseVersions?filter[app]=${globalEnvironment[kAppID]}&filter[version]=$version'),
       headers: {'Authorization': 'Bearer $token'},
     );
-    final data = jsonDecode(resp.body)['data'] as List;
+    var respData = jsonDecode(resp.body)['data'];
+    if(respData == null){
+      return false;
+    }
+    final data = respData as List;
     if (data.isEmpty) {
       return false;
     }
-
     String preReleaseVersionId = data.first['id'];
 
     final respBuild = await http.get(
@@ -288,7 +291,11 @@ class AppPackagePublisherAppStore extends AppPackagePublisher {
           'https://api.appstoreconnect.apple.com/v1/builds?filter[preReleaseVersion]=$preReleaseVersionId'),
       headers: {'Authorization': 'Bearer $token'},
     );
-    final dataBuild = jsonDecode(respBuild.body)['data'] as List;
+    var respBuildData = jsonDecode(respBuild.body)['data'];
+    if(respBuildData == null){
+      return false;
+    }
+    final dataBuild = respBuildData as List;
     if(dataBuild.isEmpty){
       return false;
     }
