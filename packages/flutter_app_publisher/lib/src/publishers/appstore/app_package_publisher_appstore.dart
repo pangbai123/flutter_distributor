@@ -808,7 +808,7 @@ class AppPackagePublisherAppStore extends AppPackagePublisher {
         submissionId = await _createReviewSubmission(appId: appId, platform: platform);
         if (submissionId == null) {
           print('❌ 无法创建或复用 submission，请手动处理。');
-          return null;
+          throw Exception("❌ 无法创建或复用 submission，请手动处理。");
         }
         await _createReviewSubmissionItem(
           submissionId: submissionId,
@@ -824,8 +824,7 @@ class AppPackagePublisherAppStore extends AppPackagePublisher {
       print('✅ 目标版本已成功提交 App 审核 (submissionId=$submissionId)');
       return submissionId;
     } else {
-      print('⚠️ 提交审核失败，请手动检查 submissionId=$submissionId');
-      return null;
+      throw Exception("提交审核失败，请手动检查 submissionId=$submissionId");
     }
   }
 
