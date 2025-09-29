@@ -116,7 +116,7 @@ class AppPackagePublisherAppStore extends AppPackagePublisher {
         url: 'https://appstoreconnect.apple.com/apps',
       );
     } catch (e) {
-      throw PublishError('Failed to publish app: $e');
+      exit(1);
     }
   }
 
