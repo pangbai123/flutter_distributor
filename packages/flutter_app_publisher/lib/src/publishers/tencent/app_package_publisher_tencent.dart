@@ -193,10 +193,11 @@ class AppPackagePublisherTencent extends AppPackagePublisher {
       // 业务参数
       'pkg_name': pkgName!,
       'app_id': appId!,
-      'apk32_flag': '1',
+      'apk32_flag': '2',
       'deploy_type': '1',//立即发布
-      'apk32_file_serial_number':serialNumber,
-      'apk32_file_md5':appMD5,
+      'apk64_flag': '1',
+      'apk64_file_serial_number':serialNumber,
+      'apk64_file_md5':appMD5,
       'feature':appUpdateLog
     };
     // 计算签名
