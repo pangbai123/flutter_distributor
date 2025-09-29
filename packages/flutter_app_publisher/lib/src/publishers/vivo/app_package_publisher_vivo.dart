@@ -27,22 +27,26 @@ class AppPackagePublisherVivo extends AppPackagePublisher {
     Map<String, dynamic>? publishArguments,
     PublishProgressCallback? onPublishProgress,
   }) async {
-    globalEnvironment = environment ?? Platform.environment;
-    File file = fileSystemEntity as File;
-    client = globalEnvironment[kEnvVivoKey];
-    access = globalEnvironment[kEnvVivoSecret];
-    if ((client ?? '').isEmpty) {
-      throw PublishError('Missing `$kEnvVivoKey` environment variable.');
+    try {
+      globalEnvironment = environment ?? Platform.environment;
+      File file = fileSystemEntity as File;
+      client = globalEnvironment[kEnvVivoKey];
+      access = globalEnvironment[kEnvVivoSecret];
+      if ((client ?? '').isEmpty) {
+        throw PublishError('Missing `$kEnvVivoKey` environment variable.');
+      }
+      if ((access ?? '').isEmpty) {
+        throw PublishError('Missing `$kEnvVivoSecret` environment variable.');
+      }
+      Map uploadInfo = await uploadApp(
+          globalEnvironment[kEnvPkgName]!, file, onPublishProgress);
+      // print('上传文件成功：${jsonEncode(uploadInfo)}');
+      // //提交审核信息
+      Map submitInfo = await submit(uploadInfo, {});
+      return PublishResult(url: globalEnvironment[kEnvAppName]! + name + '提交成功}');
+    } on Exception catch (e) {
+      exit(1);
     }
-    if ((access ?? '').isEmpty) {
-      throw PublishError('Missing `$kEnvVivoSecret` environment variable.');
-    }
-    Map uploadInfo = await uploadApp(
-        globalEnvironment[kEnvPkgName]!, file, onPublishProgress);
-    // print('上传文件成功：${jsonEncode(uploadInfo)}');
-    // //提交审核信息
-    Map submitInfo = await submit(uploadInfo, {});
-    return PublishResult(url: globalEnvironment[kEnvAppName]! + name + '提交成功}');
   }
 
   Future<Map> submit(Map uploadInfo, Map appInfo) async {

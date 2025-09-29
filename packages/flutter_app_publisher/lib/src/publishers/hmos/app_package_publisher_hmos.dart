@@ -30,28 +30,34 @@ class AppPackagePublisherHmos extends AppPackagePublisher {
     Map<String, dynamic>? publishArguments,
     PublishProgressCallback? onPublishProgress,
   }) async {
-    globalEnvironment = environment ?? Platform.environment;
-    File file = fileSystemEntity as File;
-    client = globalEnvironment[kEnvHuaweiClientId];
-    access = globalEnvironment[kEnvHuaweiAcessSecrt];
-    if ((client ?? '').isEmpty) {
-      throw PublishError('Missing `$kEnvHuaweiClientId` environment variable.');
-    }
-    if ((access ?? '').isEmpty) {
-      throw PublishError(
-          'Missing `$kEnvHuaweiAcessSecrt` environment variable.');
-    }
-    token = await getToken(client!, access!);
-    await uploadApp(file, onPublishProgress);
+    try {
+      globalEnvironment = environment ?? Platform.environment;
+      File file = fileSystemEntity as File;
+      client = globalEnvironment[kEnvHuaweiClientId];
+      access = globalEnvironment[kEnvHuaweiAcessSecrt];
+      if ((client ?? '').isEmpty) {
+        throw PublishError(
+            'Missing `$kEnvHuaweiClientId` environment variable.');
+      }
+      if ((access ?? '').isEmpty) {
+        throw PublishError(
+            'Missing `$kEnvHuaweiAcessSecrt` environment variable.');
+      }
+      token = await getToken(client!, access!);
+      await uploadApp(file, onPublishProgress);
 
-    Map appInfo = await getAppInfo();
-    //上传绿色资料
-    // await uploadGreen();
-    //更新日志
-    await updateDesc(appInfo);
-    //提交审核信息
-    await submit();
-    return PublishResult(url: globalEnvironment[kEnvAppName]! + name + '提交成功}');
+      Map appInfo = await getAppInfo();
+      //上传绿色资料
+      // await uploadGreen();
+      //更新日志
+      await updateDesc(appInfo);
+      //提交审核信息
+      await submit();
+      return PublishResult(
+          url: globalEnvironment[kEnvAppName]! + name + '提交成功}');
+    } catch (e) {
+      exit(1);
+    }
   }
 
   Future submit({int times = 0}) async {
@@ -122,25 +128,24 @@ class AppPackagePublisherHmos extends AppPackagePublisher {
         return;
       }
       var desMap = await PublishUtil.sendRequest(
-        'https://connect-api.cloud.huawei.com/api/publish/v3/app-language-info',
-        {
-          'lang': appInfo['defaultLang'],
-          'newFeatures': globalEnvironment[kEnvUpdateLog],
-          'appId': globalEnvironment[kEnvHuaweiAppId],
-        },
-        queryParams: {
-          'lang': appInfo['defaultLang'],
-          'newFeatures': globalEnvironment[kEnvUpdateLog],
-          'appId': globalEnvironment[kEnvHuaweiAppId],
-        },
-        header: {
-          'client_id': client,
-          'Authorization': 'Bearer ${token}',
-        },
+          'https://connect-api.cloud.huawei.com/api/publish/v3/app-language-info',
+          {
+            'lang': appInfo['defaultLang'],
+            'newFeatures': globalEnvironment[kEnvUpdateLog],
+            'appId': globalEnvironment[kEnvHuaweiAppId],
+          },
+          queryParams: {
+            'lang': appInfo['defaultLang'],
+            'newFeatures': globalEnvironment[kEnvUpdateLog],
+            'appId': globalEnvironment[kEnvHuaweiAppId],
+          },
+          header: {
+            'client_id': client,
+            'Authorization': 'Bearer ${token}',
+          },
           isGet: false,
-        isPut: true,
-        isFrom: false
-      );
+          isPut: true,
+          isFrom: false);
       if (desMap['ret']?['code'] != 0) {
         throw PublishError('更新应用信息失败（更新信息');
       }
@@ -204,7 +209,6 @@ class AppPackagePublisherHmos extends AppPackagePublisher {
         } else {
           throw PublishError('更新文件信息失败：${map}');
         }
-
       } else {
         throw PublishError('bbbb更新文件信息失败：${map}');
       }
@@ -212,7 +216,6 @@ class AppPackagePublisherHmos extends AppPackagePublisher {
       throw PublishError('请求失败：${response.statusCode}');
     }
   }
-
 
   /// 获取上传 Token 信息
   Future<String> getToken(String client, String secret) async {

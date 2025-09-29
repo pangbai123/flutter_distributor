@@ -31,11 +31,15 @@ class AppPackagePublisherDoorzo extends AppPackagePublisher {
   }) async {
 
 
-    globalEnvironment = environment ?? Platform.environment;
-    File file = fileSystemEntity as File;
-    var url = await uploadApp(file, onPublishProgress);
-    print('上传文件成功：${url}');
-    await submit(url);
+    try {
+      globalEnvironment = environment ?? Platform.environment;
+      File file = fileSystemEntity as File;
+      var url = await uploadApp(file, onPublishProgress);
+      print('上传文件成功：${url}');
+      await submit(url);
+    } on Exception catch (e) {
+      exit(1);
+    }
     return PublishResult(url: globalEnvironment[kEnvAppName]! + name + '提交成功}');
   }
 

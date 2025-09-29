@@ -28,90 +28,94 @@ class AppPackagePublisherPlayStore extends AppPackagePublisher {
     Map<String, dynamic>? publishArguments,
     PublishProgressCallback? onPublishProgress,
   }) async {
-    globalEnvironment = environment ?? Platform.environment;
-
-    File file = fileSystemEntity as File;
-
-    final releaseNotesList;
-    try{
-      final jsonFile = (environment ?? Platform.environment)[kEnvReleaseNotes];
-      final releaseNotesMap = await loadReleaseNotes(jsonFile);
-      releaseNotesList = releaseNotesMap.entries.map((entry) {
-        return LocalizedText(
-          language: entry.key,
-          text: entry.value,
-        );
-      }).toList();
-    }catch(e){
-      throw PublishError('${globalEnvironment[kEnvAppName]} $name 提交失败: $e');
-    }
-
     try {
-      PublishPlayStoreConfig publishConfig = PublishPlayStoreConfig.parse(
-        globalEnvironment,
-        {
-          "package-name": globalEnvironment[kEnvPkgName],
-          "track": globalEnvironment[kEnvTrack]
-        },
-      );
+      globalEnvironment = environment ?? Platform.environment;
 
-      String jsonString =
-          File(publishConfig.credentialsFile).readAsStringSync();
-      ServiceAccountCredentials serviceAccountCredentials =
-          ServiceAccountCredentials.fromJson(json.decode(jsonString));
+      File file = fileSystemEntity as File;
 
-      final client = await clientViaServiceAccount(
-        serviceAccountCredentials,
-        [AndroidPublisherApi.androidpublisherScope],
-      );
-
-      final AndroidPublisherApi publisherApi = AndroidPublisherApi(client);
-
-      AppEdit appEdit = await publisherApi.edits.insert(
-        AppEdit(),
-        publishConfig.packageName,
-      );
-
-      Media uploadMedia = Media(file.openRead(), file.lengthSync());
-
-      final bundle = await publisherApi.edits.bundles.upload(
-        publishConfig.packageName,
-        appEdit.id!,
-        uploadMedia: uploadMedia,
-      );
-
-
-      if (publishConfig.track != null) {
-        final track = Track(
-          track: publishConfig.track,
-          releases: [
-            TrackRelease(
-              versionCodes: [bundle.versionCode!.toString()],
-              status: 'completed',
-              releaseNotes: releaseNotesList
-            ),
-          ],
-        );
-        await publisherApi.edits.tracks.update(
-          track,
-          publishConfig.packageName,
-          appEdit.id!,
-          publishConfig.track!,
-        );
+      final releaseNotesList;
+      try{
+        final jsonFile = (environment ?? Platform.environment)[kEnvReleaseNotes];
+        final releaseNotesMap = await loadReleaseNotes(jsonFile);
+        releaseNotesList = releaseNotesMap.entries.map((entry) {
+          return LocalizedText(
+            language: entry.key,
+            text: entry.value,
+          );
+        }).toList();
+      }catch(e){
+        throw PublishError('${globalEnvironment[kEnvAppName]} $name 提交失败: $e');
       }
 
-      await publisherApi.edits.commit(
-        publishConfig.packageName,
-        appEdit.id!,
-      );
+      try {
+        PublishPlayStoreConfig publishConfig = PublishPlayStoreConfig.parse(
+          globalEnvironment,
+          {
+            "package-name": globalEnvironment[kEnvPkgName],
+            "track": globalEnvironment[kEnvTrack]
+          },
+        );
 
-      return PublishResult(
-        url: '${globalEnvironment[kEnvAppName]} $name 提交成功',
-      );
-    } catch (e, stack) {
-      // 打印调试信息
-      print('发布失败: $e\n$stack');
-      throw PublishError('${globalEnvironment[kEnvAppName]} $name 提交失败: $e');
+        String jsonString =
+            File(publishConfig.credentialsFile).readAsStringSync();
+        ServiceAccountCredentials serviceAccountCredentials =
+            ServiceAccountCredentials.fromJson(json.decode(jsonString));
+
+        final client = await clientViaServiceAccount(
+          serviceAccountCredentials,
+          [AndroidPublisherApi.androidpublisherScope],
+        );
+
+        final AndroidPublisherApi publisherApi = AndroidPublisherApi(client);
+
+        AppEdit appEdit = await publisherApi.edits.insert(
+          AppEdit(),
+          publishConfig.packageName,
+        );
+
+        Media uploadMedia = Media(file.openRead(), file.lengthSync());
+
+        final bundle = await publisherApi.edits.bundles.upload(
+          publishConfig.packageName,
+          appEdit.id!,
+          uploadMedia: uploadMedia,
+        );
+
+
+        if (publishConfig.track != null) {
+          final track = Track(
+            track: publishConfig.track,
+            releases: [
+              TrackRelease(
+                versionCodes: [bundle.versionCode!.toString()],
+                status: 'completed',
+                releaseNotes: releaseNotesList
+              ),
+            ],
+          );
+          await publisherApi.edits.tracks.update(
+            track,
+            publishConfig.packageName,
+            appEdit.id!,
+            publishConfig.track!,
+          );
+        }
+
+        await publisherApi.edits.commit(
+          publishConfig.packageName,
+          appEdit.id!,
+        );
+
+        return PublishResult(
+          url: '${globalEnvironment[kEnvAppName]} $name 提交成功',
+        );
+      } catch (e, stack) {
+        // 打印调试信息
+        print('发布失败: $e\n$stack');
+        throw PublishError('${globalEnvironment[kEnvAppName]} $name 提交失败: $e');
+      }
+    } on Exception catch (e) {
+      exit(1);
     }
   }
 

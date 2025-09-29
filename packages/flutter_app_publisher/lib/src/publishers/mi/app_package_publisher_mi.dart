@@ -32,10 +32,14 @@ class AppPackagePublisherMi extends AppPackagePublisher {
     PublishProgressCallback? onPublishProgress,
   }) async {
     globalEnvironment = environment ?? Platform.environment;
-    File file = fileSystemEntity as File;
-    Map uploadInfo = await uploadApp(
-        globalEnvironment[kEnvPkgName]!, file, onPublishProgress);
-    return PublishResult(url: globalEnvironment[kEnvAppName]! + name + '提交成功}');
+    try {
+      File file = fileSystemEntity as File;
+      Map uploadInfo = await uploadApp(
+          globalEnvironment[kEnvPkgName]!, file, onPublishProgress);
+      return PublishResult(url: globalEnvironment[kEnvAppName]! + name + '提交成功}');
+    } on Exception catch (e) {
+      exit(1);
+    }
   }
 
   ///上传文件

@@ -31,24 +31,28 @@ class AppPackagePublisherHonor extends AppPackagePublisher {
     Map<String, dynamic>? publishArguments,
     PublishProgressCallback? onPublishProgress,
   }) async {
-    globalEnvironment = environment ?? Platform.environment;
-    File file = fileSystemEntity as File;
-    client = globalEnvironment[kEnvHonorClientId];
-    access = globalEnvironment[kEnvHonorAcessSecrt];
-    if ((client ?? '').isEmpty) {
-      throw PublishError('Missing `$kEnvHonorClientId` environment variable.');
+    try {
+      globalEnvironment = environment ?? Platform.environment;
+      File file = fileSystemEntity as File;
+      client = globalEnvironment[kEnvHonorClientId];
+      access = globalEnvironment[kEnvHonorAcessSecrt];
+      if ((client ?? '').isEmpty) {
+        throw PublishError('Missing `$kEnvHonorClientId` environment variable.');
+      }
+      if ((access ?? '').isEmpty) {
+        throw PublishError(
+            'Missing `$kEnvHonorAcessSecrt` environment variable.');
+      }
+      token = await getToken(client!, access!);
+      await uploadApp(file, onPublishProgress);
+      //更新日志
+      await updateDesc();
+      //提交审核信息
+      await submit();
+      return PublishResult(url: globalEnvironment[kEnvAppName]! + name + '提交成功}');
+    } on Exception catch (e) {
+      exit(1);
     }
-    if ((access ?? '').isEmpty) {
-      throw PublishError(
-          'Missing `$kEnvHonorAcessSecrt` environment variable.');
-    }
-    token = await getToken(client!, access!);
-    await uploadApp(file, onPublishProgress);
-    //更新日志
-    await updateDesc();
-    //提交审核信息
-    await submit();
-    return PublishResult(url: globalEnvironment[kEnvAppName]! + name + '提交成功}');
   }
 
   Future submit({int times = 0}) async {

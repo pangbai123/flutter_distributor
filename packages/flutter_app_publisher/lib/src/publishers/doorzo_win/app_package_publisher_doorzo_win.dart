@@ -25,16 +25,20 @@ class AppPackagePublisherDoorzoWin extends AppPackagePublisher {
     Map<String, dynamic>? publishArguments,
     PublishProgressCallback? onPublishProgress,
   }) async {
-    globalEnvironment = environment ?? Platform.environment;
-    File file = fileSystemEntity as File;
-    DoorzoHttpClient.instance.init();
-    var url = await uploadApp(file, onPublishProgress);
-    if (url == '') {
-      throw Exception("上传失败");
+    try {
+      globalEnvironment = environment ?? Platform.environment;
+      File file = fileSystemEntity as File;
+      DoorzoHttpClient.instance.init();
+      var url = await uploadApp(file, onPublishProgress);
+      if (url == '') {
+        throw Exception("上传失败");
+      }
+      print('上传文件成功：${url}');
+      await submit(url);
+      return PublishResult(url: globalEnvironment[kEnvAppName]! + name + '提交成功}');
+    } on Exception catch (e) {
+      exit(1);
     }
-    print('上传文件成功：${url}');
-    await submit(url);
-    return PublishResult(url: globalEnvironment[kEnvAppName]! + name + '提交成功}');
   }
 
   Future submit(String url) async {

@@ -24,24 +24,28 @@ class AppPackagePublisherPgyer extends AppPackagePublisher {
     Map<String, dynamic>? publishArguments,
     PublishProgressCallback? onPublishProgress,
   }) async {
-    File file = fileSystemEntity as File;
-    String? apiKey = (environment ?? Platform.environment)[kEnvPgyerApiKey];
-    if ((apiKey ?? '').isEmpty) {
-      throw PublishError('Missing `$kEnvPgyerApiKey` environment variable.');
-    }
+    try {
+      File file = fileSystemEntity as File;
+      String? apiKey = (environment ?? Platform.environment)[kEnvPgyerApiKey];
+      if ((apiKey ?? '').isEmpty) {
+        throw PublishError('Missing `$kEnvPgyerApiKey` environment variable.');
+      }
 
-    var tokenInfo = await getCOSToken(apiKey!, file.path);
-    String uploadKey = await uploadApp(tokenInfo, file, onPublishProgress);
-    if (uploadKey.isEmpty) {
-      throw PublishError('UploadApp error');
+      var tokenInfo = await getCOSToken(apiKey!, file.path);
+      String uploadKey = await uploadApp(tokenInfo, file, onPublishProgress);
+      if (uploadKey.isEmpty) {
+        throw PublishError('UploadApp error');
+      }
+      // 重试次数设置为 0
+      tryCount = 0;
+      var buildResult = await getBuildInfo(apiKey, uploadKey);
+      String buildKey = buildResult.data!['data']['buildKey'];
+      return PublishResult(
+        url: 'http://www.pgyer.com/$buildKey',
+      );
+    } on Exception catch (e) {
+      exit(1);
     }
-    // 重试次数设置为 0
-    tryCount = 0;
-    var buildResult = await getBuildInfo(apiKey, uploadKey);
-    String buildKey = buildResult.data!['data']['buildKey'];
-    return PublishResult(
-      url: 'http://www.pgyer.com/$buildKey',
-    );
   }
 
   /// 获取上传 Token 信息

@@ -33,26 +33,30 @@ class AppPackagePublisherHuawei extends AppPackagePublisher {
     Map<String, dynamic>? publishArguments,
     PublishProgressCallback? onPublishProgress,
   }) async {
-    globalEnvironment = environment ?? Platform.environment;
-    File file = fileSystemEntity as File;
-    client = globalEnvironment[kEnvHuaweiClientId];
-    access = globalEnvironment[kEnvHuaweiAcessSecrt];
-    if ((client ?? '').isEmpty) {
-      throw PublishError('Missing `$kEnvHuaweiClientId` environment variable.');
+    try {
+      globalEnvironment = environment ?? Platform.environment;
+      File file = fileSystemEntity as File;
+      client = globalEnvironment[kEnvHuaweiClientId];
+      access = globalEnvironment[kEnvHuaweiAcessSecrt];
+      if ((client ?? '').isEmpty) {
+        throw PublishError('Missing `$kEnvHuaweiClientId` environment variable.');
+      }
+      if ((access ?? '').isEmpty) {
+        throw PublishError(
+            'Missing `$kEnvHuaweiAcessSecrt` environment variable.');
+      }
+      token = await getToken(client!, access!);
+      await uploadApp(file, onPublishProgress);
+      //上传绿色资料
+      await uploadGreen();
+      //更新日志
+      await updateDesc();
+      //提交审核信息
+      await submit();
+      return PublishResult(url: globalEnvironment[kEnvAppName]! + name + '提交成功}');
+    } on Exception catch (e) {
+      exit(1);
     }
-    if ((access ?? '').isEmpty) {
-      throw PublishError(
-          'Missing `$kEnvHuaweiAcessSecrt` environment variable.');
-    }
-    token = await getToken(client!, access!);
-    await uploadApp(file, onPublishProgress);
-    //上传绿色资料
-    await uploadGreen();
-    //更新日志
-    await updateDesc();
-    //提交审核信息
-    await submit();
-    return PublishResult(url: globalEnvironment[kEnvAppName]! + name + '提交成功}');
   }
 
   Future submit({int times = 0}) async {

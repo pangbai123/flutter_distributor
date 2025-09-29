@@ -42,79 +42,83 @@ class AppPackagePublisherSamsung extends AppPackagePublisher {
         Map<String, dynamic>? publishArguments,
         PublishProgressCallback? onPublishProgress,
       }) async {
-    globalEnvironment = environment ?? Platform.environment;
+    try {
+      globalEnvironment = environment ?? Platform.environment;
 
-    /// Step 1 获取 token
-    accessToken = await requestAccessToken();
-    if ((accessToken ?? '').isEmpty) {
-      throw PublishError('accessToken 为空');
-    }
-
-    /// Step 2 创建上传会话
-    Map? map = await createUploadSessionId();
-    uploadUrl = map?['url'];
-    sessionId = map?['sessionId'];
-    if ((uploadUrl ?? '').isEmpty || (sessionId ?? '').isEmpty) {
-      throw PublishError('uploadUrl 或者 sessionId 为空');
-    }
-
-    /// Step 3 获取 App 信息
-    Map<String, dynamic>? appInfo = await getAppInfo();
-    if (appInfo == null) {
-      throw PublishError('app信息 为空');
-    }
-
-    /// Step 4 上传 APK
-    File file = fileSystemEntity as File;
-    Map<String, dynamic>? uploadInfo = await uploadApp(
-      globalEnvironment[kEnvPkgName]!,
-      file,
-      onPublishProgress,
-    );
-    if (uploadInfo == null) {
-      throw PublishError('上传文件信息 为空');
-    }
-
-    /// Step 7 更新元数据
-    Map<String, dynamic> params = {
-      "contentId": appInfo["contentId"],
-      "appTitle": appInfo["appTitle"],
-      "defaultLanguageCode": appInfo["defaultLanguageCode"],
-      "paid": appInfo["paid"],
-      "publicationType": appInfo["publicationType"],
-    };
-
-    /// Step 5 构造 binary 参数
-    await updateAppInfo(params);
-
-
-    /// Step 6 构造 binary 参数
-    Map<String, dynamic> binaryParam = {
-      "gms": "N",
-      "iapSdk": "N",
-      "packageName": globalEnvironment[kEnvPkgName],
-      "fileName": uploadInfo["fileName"],
-      "versionCode": globalEnvironment[kEnvVersionCode],
-      "versionName": globalEnvironment[kEnvVersionName],
-      "filekey": uploadInfo["fileKey"],
-    };
-
-    /// Step 7 调用新增 / 修改二进制接口
-    if ((appInfo["binaryList"] as List?)?.isEmpty ?? true) {
-      await addBinary(appInfo["contentId"], binaryParam);
-    } else {
-      for (int i = 0; i < (appInfo["binaryList"].length ?? 0); i++) {
-        Map<String, dynamic> binaryMap = appInfo["binaryList"][i];
-        await deleteBinary(appInfo["contentId"], binaryMap['binarySeq']);
+      /// Step 1 获取 token
+      accessToken = await requestAccessToken();
+      if ((accessToken ?? '').isEmpty) {
+        throw PublishError('accessToken 为空');
       }
-      await addBinary(appInfo["contentId"], binaryParam);
-      // await modifyBinary(appInfo["contentId"], binaryMap['binarySeq'],binaryParam,);
+
+      /// Step 2 创建上传会话
+      Map? map = await createUploadSessionId();
+      uploadUrl = map?['url'];
+      sessionId = map?['sessionId'];
+      if ((uploadUrl ?? '').isEmpty || (sessionId ?? '').isEmpty) {
+        throw PublishError('uploadUrl 或者 sessionId 为空');
+      }
+
+      /// Step 3 获取 App 信息
+      Map<String, dynamic>? appInfo = await getAppInfo();
+      if (appInfo == null) {
+        throw PublishError('app信息 为空');
+      }
+
+      /// Step 4 上传 APK
+      File file = fileSystemEntity as File;
+      Map<String, dynamic>? uploadInfo = await uploadApp(
+        globalEnvironment[kEnvPkgName]!,
+        file,
+        onPublishProgress,
+      );
+      if (uploadInfo == null) {
+        throw PublishError('上传文件信息 为空');
+      }
+
+      /// Step 7 更新元数据
+      Map<String, dynamic> params = {
+        "contentId": appInfo["contentId"],
+        "appTitle": appInfo["appTitle"],
+        "defaultLanguageCode": appInfo["defaultLanguageCode"],
+        "paid": appInfo["paid"],
+        "publicationType": appInfo["publicationType"],
+      };
+
+      /// Step 5 构造 binary 参数
+      await updateAppInfo(params);
+
+
+      /// Step 6 构造 binary 参数
+      Map<String, dynamic> binaryParam = {
+        "gms": "N",
+        "iapSdk": "N",
+        "packageName": globalEnvironment[kEnvPkgName],
+        "fileName": uploadInfo["fileName"],
+        "versionCode": globalEnvironment[kEnvVersionCode],
+        "versionName": globalEnvironment[kEnvVersionName],
+        "filekey": uploadInfo["fileKey"],
+      };
+
+      /// Step 7 调用新增 / 修改二进制接口
+      if ((appInfo["binaryList"] as List?)?.isEmpty ?? true) {
+        await addBinary(appInfo["contentId"], binaryParam);
+      } else {
+        for (int i = 0; i < (appInfo["binaryList"].length ?? 0); i++) {
+          Map<String, dynamic> binaryMap = appInfo["binaryList"][i];
+          await deleteBinary(appInfo["contentId"], binaryMap['binarySeq']);
+        }
+        await addBinary(appInfo["contentId"], binaryParam);
+        // await modifyBinary(appInfo["contentId"], binaryMap['binarySeq'],binaryParam,);
+      }
+
+      /// Step 8 提交审核
+      await submit();
+
+      return PublishResult(url: "${globalEnvironment[kEnvAppName]} $name 提交成功");
+    } on Exception catch (e) {
+      exit(1);
     }
-
-    /// Step 8 提交审核
-    await submit();
-
-    return PublishResult(url: "${globalEnvironment[kEnvAppName]} $name 提交成功");
   }
 
 

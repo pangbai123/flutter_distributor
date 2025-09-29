@@ -23,13 +23,17 @@ class AppPackagePublisherDoorzoPda extends AppPackagePublisher {
     Map<String, dynamic>? publishArguments,
     PublishProgressCallback? onPublishProgress,
   }) async {
-    globalEnvironment = environment ?? Platform.environment;
-    File file = fileSystemEntity as File;
-    DoorzoHttpClient.instance.init();
-    var url = await uploadApp(file, onPublishProgress);
-    print('上传文件成功：${url}');
-    await submit(url);
-    return PublishResult(url: globalEnvironment[kEnvAppName]! + name + '提交成功}');
+    try {
+      globalEnvironment = environment ?? Platform.environment;
+      File file = fileSystemEntity as File;
+      DoorzoHttpClient.instance.init();
+      var url = await uploadApp(file, onPublishProgress);
+      print('上传文件成功：${url}');
+      await submit(url);
+      return PublishResult(url: globalEnvironment[kEnvAppName]! + name + '提交成功}');
+    } on Exception catch (e) {
+      exit(1);
+    }
   }
 
   Future submit(String url) async {

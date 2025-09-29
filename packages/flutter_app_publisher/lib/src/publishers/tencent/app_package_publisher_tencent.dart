@@ -38,27 +38,31 @@ class AppPackagePublisherTencent extends AppPackagePublisher {
     PublishProgressCallback? onPublishProgress,
   }) async {
 
-    File file = fileSystemEntity as File;
+    try {
+      File file = fileSystemEntity as File;
 
-    globalEnvironment = environment ?? Platform.environment;
-    userId = globalEnvironment[kEnvTencentAppUserId];
-    appName = globalEnvironment[kEnvAppName];
-    pkgName = globalEnvironment[kEnvPkgName];
-    appId = globalEnvironment[kEnvTencentAppId];
-    accessSecret = globalEnvironment[kEnvTencentAccessSecret];
-    appMD5 = globalEnvironment[kEnvAppMD5];
-    appUpdateLog = globalEnvironment[kEnvUpdateLog];
+      globalEnvironment = environment ?? Platform.environment;
+      userId = globalEnvironment[kEnvTencentAppUserId];
+      appName = globalEnvironment[kEnvAppName];
+      pkgName = globalEnvironment[kEnvPkgName];
+      appId = globalEnvironment[kEnvTencentAppId];
+      accessSecret = globalEnvironment[kEnvTencentAccessSecret];
+      appMD5 = globalEnvironment[kEnvAppMD5];
+      appUpdateLog = globalEnvironment[kEnvUpdateLog];
 
-    Map? appInfo = await getAppInfo();
-    Map? upLoadInfo = await getUpLoadFileInfo(appInfo);
-    if(upLoadInfo != null){
-      await uploadFile(upLoadInfo["pre_sign_url"],file);
-      String serialNumber = upLoadInfo["serial_number"];
-      await updateAppInfo(serialNumber);
+      Map? appInfo = await getAppInfo();
+      Map? upLoadInfo = await getUpLoadFileInfo(appInfo);
+      if(upLoadInfo != null){
+        await uploadFile(upLoadInfo["pre_sign_url"],file);
+        String serialNumber = upLoadInfo["serial_number"];
+        await updateAppInfo(serialNumber);
 
-    }else{
+      }else{
+      }
+      return PublishResult(url: globalEnvironment[kEnvAppName]! + name + '提交成功}');
+    } on Exception catch (e) {
+      exit(1);
     }
-    return PublishResult(url: globalEnvironment[kEnvAppName]! + name + '提交成功}');
   }
 
 
