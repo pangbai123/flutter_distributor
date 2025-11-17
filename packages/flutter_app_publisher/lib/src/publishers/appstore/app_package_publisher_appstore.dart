@@ -402,8 +402,10 @@ class AppPackagePublisherAppStore extends AppPackagePublisher {
         }
       }),
     );
-    if (createResp.statusCode != 201)
+
+    if (createResp.statusCode != 201){
       throw Exception('创建版本失败: ${createResp.body}');
+    }
 
     final versionId = jsonDecode(createResp.body)['data']['id'];
     print('✅ 新版本创建成功: $version');

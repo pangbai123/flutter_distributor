@@ -44,17 +44,18 @@ class AppPackagePublisherVivo extends AppPackagePublisher {
       // //提交审核信息
       Map submitInfo = await submit(uploadInfo, {});
       return PublishResult(url: globalEnvironment[kEnvAppName]! + name + '提交成功}');
-    } on Exception catch (e) {
+    }  catch (e) {
+      print("======vivo提交失败");
       exit(1);
     }
   }
 
-  Future<Map> submit(Map uploadInfo, Map appInfo) async {
+  Future<Map> submit(Map? uploadInfo, Map appInfo) async {
     Map<String, dynamic> params = {};
     params['packageName'] = globalEnvironment[kEnvPkgName];
     params['versionCode'] = globalEnvironment[kEnvVersionCode];
-    params['apk'] = uploadInfo['data']['serialnumber'];
-    params['fileMd5'] = uploadInfo['data']['fileMd5'];
+    params['apk'] = uploadInfo?['data']?['serialnumber'];
+    params['fileMd5'] = uploadInfo?['data']?['fileMd5'];
     params['onlineType'] = 1;
     params['updateDesc'] = globalEnvironment[kEnvUpdateLog];
 
@@ -73,7 +74,7 @@ class AppPackagePublisherVivo extends AppPackagePublisher {
       params,
       isGet: false,
     );
-    if (map?["code"] == 0) {
+    if (map?["code"] == 0 && map?["msg"] == null) {
       return map!;
     } else {
       throw PublishError("请求submit失败");

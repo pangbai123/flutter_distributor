@@ -31,23 +31,24 @@ class AppPackagePublisherPlayStore extends AppPackagePublisher {
     try {
       globalEnvironment = environment ?? Platform.environment;
 
-      File file = fileSystemEntity as File;
-
-      final releaseNotesList;
-      try{
-        final jsonFile = (environment ?? Platform.environment)[kEnvReleaseNotes];
-        final releaseNotesMap = await loadReleaseNotes(jsonFile);
-        releaseNotesList = releaseNotesMap.entries.map((entry) {
-          return LocalizedText(
-            language: entry.key,
-            text: entry.value,
-          );
-        }).toList();
-      }catch(e){
-        throw PublishError('${globalEnvironment[kEnvAppName]} $name 提交失败: $e');
-      }
-
       try {
+
+        File file = fileSystemEntity as File;
+
+        final releaseNotesList;
+        try{
+          final jsonFile = (environment ?? Platform.environment)[kEnvReleaseNotes];
+          final releaseNotesMap = await loadReleaseNotes(jsonFile);
+          releaseNotesList = releaseNotesMap.entries.map((entry) {
+            return LocalizedText(
+              language: entry.key,
+              text: entry.value,
+            );
+          }).toList();
+        }catch(e){
+          throw PublishError('${globalEnvironment[kEnvAppName]} $name 提交失败: $e');
+        }
+
         PublishPlayStoreConfig publishConfig = PublishPlayStoreConfig.parse(
           globalEnvironment,
           {
