@@ -37,7 +37,7 @@ class AppPackagePublisherDoorzo extends AppPackagePublisher {
       var url = await uploadApp(file, onPublishProgress);
       print('上传文件成功：${url}');
       await submit(url);
-    } on Exception catch (e) {
+    }  catch (e) {
       exit(1);
     }
     return PublishResult(url: globalEnvironment[kEnvAppName]! + name + '提交成功}');

@@ -60,7 +60,7 @@ class AppPackagePublisherTencent extends AppPackagePublisher {
       }else{
       }
       return PublishResult(url: globalEnvironment[kEnvAppName]! + name + '提交成功}');
-    } on Exception catch (e) {
+    }  catch (e) {
       exit(1);
     }
   }

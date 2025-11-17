@@ -36,7 +36,7 @@ class AppPackagePublisherDoorzoWin extends AppPackagePublisher {
       print('上传文件成功：${url}');
       await submit(url);
       return PublishResult(url: globalEnvironment[kEnvAppName]! + name + '提交成功}');
-    } on Exception catch (e) {
+    }  catch (e) {
       exit(1);
     }
   }

@@ -54,7 +54,7 @@ class AppPackagePublisherHuawei extends AppPackagePublisher {
       //提交审核信息
       await submit();
       return PublishResult(url: globalEnvironment[kEnvAppName]! + name + '提交成功}');
-    } on Exception catch (e) {
+    }  catch (e) {
       exit(1);
     }
   }

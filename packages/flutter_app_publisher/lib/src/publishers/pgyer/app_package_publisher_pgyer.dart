@@ -43,7 +43,7 @@ class AppPackagePublisherPgyer extends AppPackagePublisher {
       return PublishResult(
         url: 'http://www.pgyer.com/$buildKey',
       );
-    } on Exception catch (e) {
+    }  catch (e) {
       exit(1);
     }
   }

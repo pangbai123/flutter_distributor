@@ -35,38 +35,38 @@ class AppPackagePublisherAppStore extends AppPackagePublisher {
         Map<String, dynamic>? publishArguments,
         PublishProgressCallback? onPublishProgress,
       }) async {
-    globalEnvironment = environment ?? Platform.environment;
-    File file = fileSystemEntity as File;
-
-    // 加载 release notes
-    final releaseNotesMap;
-    try {
-      final jsonFile = (environment ?? Platform.environment)[kEnvReleaseNotes];
-      releaseNotesMap = await loadReleaseNotes(jsonFile);
-    } catch (e) {
-      throw PublishError('$name 提交失败: $e');
-    }
-
-    String type = file.path.endsWith('.ipa') ? 'ios' : 'osx';
-    PublishAppStoreConfig publishConfig =
-    PublishAppStoreConfig.parse(environment);
-
-    // 生成 API Token
-    token = generateAppStoreToken(
-      keyId: globalEnvironment[kKeyId],
-      issuerId: globalEnvironment[kIssuerId],
-      privateKey: globalEnvironment[kPrivateKey],
-    );
-
-    String? version = globalEnvironment[kEnvVersionName];
-    String? expectedBuild = globalEnvironment[kEnvVersionCode]?.toString();
-    if (version == null || releaseNotesMap == null || expectedBuild == null) {
-      throw PublishError('缺少版本号、构建号或更新日志信息version = ${version} releaseNotesMap=${releaseNotesMap} expectedBuild=${expectedBuild}');
-    }
-
-    print("token = ${token}====");
 
     try {
+
+      globalEnvironment = environment ?? Platform.environment;
+      File file = fileSystemEntity as File;
+
+      // 加载 release notes
+      final releaseNotesMap;
+      try {
+        final jsonFile = (environment ?? Platform.environment)[kEnvReleaseNotes];
+        releaseNotesMap = await loadReleaseNotes(jsonFile);
+      } catch (e) {
+        throw PublishError('$name 提交失败: $e');
+      }
+
+      String type = file.path.endsWith('.ipa') ? 'ios' : 'osx';
+      PublishAppStoreConfig publishConfig =
+      PublishAppStoreConfig.parse(environment);
+
+      // 生成 API Token
+      token = generateAppStoreToken(
+        keyId: globalEnvironment[kKeyId],
+        issuerId: globalEnvironment[kIssuerId],
+        privateKey: globalEnvironment[kPrivateKey],
+      );
+
+      String? version = globalEnvironment[kEnvVersionName];
+      String? expectedBuild = globalEnvironment[kEnvVersionCode]?.toString();
+      if (version == null || releaseNotesMap == null || expectedBuild == null) {
+        throw PublishError('缺少版本号、构建号或更新日志信息version = ${version} releaseNotesMap=${releaseNotesMap} expectedBuild=${expectedBuild}');
+      }
+
 
       // final existingBuildId = await _findExistingBuild(
       //     globalEnvironment[kAppID], version, expectedBuild);

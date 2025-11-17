@@ -55,7 +55,7 @@ class AppPackagePublisherHmos extends AppPackagePublisher {
       await submit();
       return PublishResult(
           url: globalEnvironment[kEnvAppName]! + name + '提交成功}');
-    } catch (e) {
+    }  catch (e) {
       exit(1);
     }
   }

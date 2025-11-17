@@ -49,7 +49,7 @@ class AppPackagePublisherVivoOversea extends AppPackagePublisher {
       await updateInfo(uploadInfo);
       await submit();
       return PublishResult(url: globalEnvironment[kEnvAppName]! + name + '提交成功}');
-    } on Exception catch (e) {
+    }  catch (e) {
       exit(1);
     }
   }

@@ -72,7 +72,7 @@ class AppPackagePublisherOppo extends AppPackagePublisher {
       //提交审核信息
       Map submitInfo = await submit(uploadInfo, appInfo);
       return PublishResult(url: globalEnvironment[kEnvAppName]! + name + '提交成功}');
-    } on Exception catch (e) {
+    }  catch (e) {
       exit(1);
     }
   }
