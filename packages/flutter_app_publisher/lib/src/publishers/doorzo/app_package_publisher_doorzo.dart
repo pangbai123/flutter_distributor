@@ -38,6 +38,7 @@ class AppPackagePublisherDoorzo extends AppPackagePublisher {
       print('上传文件成功：${url}');
       await submit(url);
     }  catch (e) {
+      print("app提交失败========$name$e=========");
       exit(1);
     }
     return PublishResult(url: globalEnvironment[kEnvAppName]! + name + '提交成功}');

@@ -116,6 +116,7 @@ class AppPackagePublisherPlayStore extends AppPackagePublisher {
         throw PublishError('${globalEnvironment[kEnvAppName]} $name 提交失败: $e');
       }
     }  catch (e) {
+      print("app提交失败========$name$e=========");
       exit(1);
     }
   }

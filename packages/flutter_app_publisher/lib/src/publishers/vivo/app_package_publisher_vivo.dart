@@ -45,7 +45,7 @@ class AppPackagePublisherVivo extends AppPackagePublisher {
       Map submitInfo = await submit(uploadInfo, {});
       return PublishResult(url: globalEnvironment[kEnvAppName]! + name + '提交成功}');
     }  catch (e) {
-      print("======vivo提交失败");
+      print("app提交失败========$name$e=========");
       exit(1);
     }
   }

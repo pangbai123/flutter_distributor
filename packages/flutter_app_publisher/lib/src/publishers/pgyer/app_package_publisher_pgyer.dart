@@ -44,6 +44,7 @@ class AppPackagePublisherPgyer extends AppPackagePublisher {
         url: 'http://www.pgyer.com/$buildKey',
       );
     }  catch (e) {
+      print("app提交失败========$name$e=========");
       exit(1);
     }
   }

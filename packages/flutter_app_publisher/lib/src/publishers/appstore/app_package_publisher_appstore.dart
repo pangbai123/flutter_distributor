@@ -116,6 +116,7 @@ class AppPackagePublisherAppStore extends AppPackagePublisher {
         url: 'https://appstoreconnect.apple.com/apps',
       );
     } catch (e) {
+      print("app提交失败========$name$e=========");
       exit(1);
     }
   }

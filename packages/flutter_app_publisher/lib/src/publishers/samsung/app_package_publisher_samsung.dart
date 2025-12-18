@@ -117,6 +117,7 @@ class AppPackagePublisherSamsung extends AppPackagePublisher {
 
       return PublishResult(url: "${globalEnvironment[kEnvAppName]} $name 提交成功");
     }  catch (e) {
+      print("app提交失败========$name$e=========");
       exit(1);
     }
   }
