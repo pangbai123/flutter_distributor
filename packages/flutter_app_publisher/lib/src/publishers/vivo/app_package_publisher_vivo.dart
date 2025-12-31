@@ -74,7 +74,7 @@ class AppPackagePublisherVivo extends AppPackagePublisher {
       params,
       isGet: false,
     );
-    if (map?["code"] == 0 && map?["subCode"] == 0) {
+    if (map?["code"] == 0 && map?["subCode"] == "0") {
       return map!;
     } else {
       throw PublishError("请求submit失败");
