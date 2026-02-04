@@ -15,6 +15,14 @@ const kEnvDoorzoOssInfo = 'DOORZO_OSS_INFO';
 const kEnvDoorzoUrlKey = 'DOORZO_URL_KEY';
 const kEnvDoorzoVersionKey = 'DOORZO_VERSION_KEY';
 
+const kEnvDoorzoLightKey = 'DOORZO_LIGHT_VERSION_KEY';
+const kEnvDoorzoNewKey = 'DOORZO_NEW_VERSION_KEY';
+
+
+const kEnvDoNotUploadApp = 'DOORZO_DO_NOT_UPLOAD_APP';
+const kEnvReviewVersionKey = 'DOORZO_IOS_REVIEW_VERSION_KEY';
+const kEnvReviewVersionName = 'DOORZO_IOS_REVIEW_VERSION_NAME';
+
 
 class AppPackagePublisherDoorzo extends AppPackagePublisher {
   @override
@@ -33,6 +41,12 @@ class AppPackagePublisherDoorzo extends AppPackagePublisher {
 
     try {
       globalEnvironment = environment ?? Platform.environment;
+
+      var doNotUploadApp = globalEnvironment[kEnvDoNotUploadApp];
+      if (doNotUploadApp == "true") {
+        await submitAppInfo(versionKey: globalEnvironment[kEnvReviewVersionKey], versionName: globalEnvironment[kEnvReviewVersionName]);
+        return PublishResult(url: '修改App审核版本信息提交成功');
+      }
       File file = fileSystemEntity as File;
       var url = await uploadApp(file, onPublishProgress);
       print('上传文件成功：${url}');
@@ -42,6 +56,31 @@ class AppPackagePublisherDoorzo extends AppPackagePublisher {
       exit(1);
     }
     return PublishResult(url: globalEnvironment[kEnvAppName]! + name + '提交成功}');
+  }
+
+  submitAppInfo({String? versionKey, String? versionName}) async {
+
+    print('开始登录');
+    //修改我们后台版本信息
+    await DoorzoHttpClient.instance.syncRequest(
+      {
+        'n': 'Sig.Admin.Warehouse.Login',
+        'user': globalEnvironment[kEnvDoorzoAccount],
+        'password': globalEnvironment[kEnvDoorzoPwd],
+      },
+      isGet: false,
+    );
+
+    print('登录成功');
+
+    await DoorzoHttpClient.instance.syncRequest(
+      {
+        'n': 'Sig.Admin.Warehouse.UpgradeFrontAppInfo',
+        if ((versionKey?.length ?? 0) > 0)"${versionKey}": versionName??"",
+      },
+      isGet: false,
+    );
+    print('修改版本号${globalEnvironment[kEnvReviewVersionKey]}========${versionName}成功');
   }
 
   Future submit(String url) async {
