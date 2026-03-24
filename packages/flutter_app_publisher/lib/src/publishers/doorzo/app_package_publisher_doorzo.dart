@@ -43,6 +43,7 @@ class AppPackagePublisherDoorzo extends AppPackagePublisher {
       globalEnvironment = environment ?? Platform.environment;
 
       var doNotUploadApp = globalEnvironment[kEnvDoNotUploadApp];
+      print("doNotUploadApp=======$doNotUploadApp======");
       if (doNotUploadApp == "true") {
         await submitAppInfo(versionKey: globalEnvironment[kEnvReviewVersionKey], versionName: globalEnvironment[kEnvReviewVersionName]);
         return PublishResult(url: '修改App审核版本信息提交成功');
@@ -60,7 +61,7 @@ class AppPackagePublisherDoorzo extends AppPackagePublisher {
 
   submitAppInfo({String? versionKey, String? versionName}) async {
 
-    print('开始登录');
+    print('开始登录==========');
     //修改我们后台版本信息
     await DoorzoHttpClient.instance.syncRequest(
       {
@@ -101,7 +102,7 @@ class AppPackagePublisherDoorzo extends AppPackagePublisher {
         if (globalEnvironment[kEnvDoorzoVersionKey] != null)
           "${globalEnvironment[kEnvDoorzoVersionKey]}":
               globalEnvironment[kEnvVersionName],
-        globalEnvironment[kEnvDoorzoUrlKey]!: url,
+        if (globalEnvironment[kEnvDoorzoUrlKey] != null)globalEnvironment[kEnvDoorzoUrlKey]!: url,
       },
       isGet: false,
     );
@@ -114,6 +115,7 @@ class AppPackagePublisherDoorzo extends AppPackagePublisher {
     PublishProgressCallback? onPublishProgress,
   ) async {
     var info = globalEnvironment[kEnvDoorzoOssInfo]!.split('_');
+    print("=========$info========");
     Client.init(
       ossEndpoint: info[0],
       bucketName: info[1],
