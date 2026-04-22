@@ -14,6 +14,7 @@ import 'package:flutter_app_publisher/src/publishers/publishers.dart';
 import 'package:flutter_app_publisher/src/publishers/samsung/app_package_publisher_samsung.dart';
 import 'package:flutter_app_publisher/src/publishers/tencent/app_package_publisher_tencent.dart';
 import 'package:flutter_app_publisher/src/publishers/vivo/app_package_publisher_vivo.dart';
+import 'package:flutter_app_publisher/src/publishers/360/app_package_publisher_360.dart';
 import 'package:flutter_app_publisher/src/publishers/vivo_oversea/app_package_publisher_vivo_oversea.dart';
 
 class FlutterAppPublisher {
@@ -32,7 +33,8 @@ class FlutterAppPublisher {
     AppPackagePublisherDoorzoPda(),
     AppPackagePublisherDoorzoWin(),
     AppPackagePublisherHmos(),
-    AppPackagePublisherTencent()
+    AppPackagePublisherTencent(),
+    AppPackagePublisher360(),
   ];
 
   Future<PublishResult> publish(
