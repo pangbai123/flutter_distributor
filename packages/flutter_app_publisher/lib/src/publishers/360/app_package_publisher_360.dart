@@ -97,12 +97,12 @@ class AppPackagePublisher360 extends AppPackagePublisher {
 
 
     await submitVersion(data,releaseNotesMap);
-
       print("360 发布成功");
-      return PublishResult(url: "360" + name + '提交成功}');
+      return PublishResult(url: name + '提交成功}');
     }
     catch(e){
-      return PublishResult(url: "360" + name + '提交失败: $e');
+      print(name + '提交失败: $e');
+      exit(1);
     }
 
   }

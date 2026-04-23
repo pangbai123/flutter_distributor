@@ -61,9 +61,10 @@ tfstk=g_oiZljwfW1Ww55eqsr6JduiWcYLflZbyjIYMoF28WPQ6SpsH2xEaj4tWxRsoXqsvVIY6CZm3b
       Map<String, dynamic> icpInfo = await queryAppIcpInfo(appUpLoadInfo);
       await submitAliAppFull(appUpLoadInfo, appInfo, icpInfo);
       print("阿里 发布成功");
-      return PublishResult(url: "阿里" + name + '提交成功}');
+      return PublishResult(url: name + '提交成功}');
     } catch (e) {
-      return PublishResult(url: "阿里" + name + '提交失败: $e');
+      print(name + '提交失败: $e');
+      exit(1);
     }
   }
 
