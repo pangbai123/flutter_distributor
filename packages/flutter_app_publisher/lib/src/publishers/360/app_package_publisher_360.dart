@@ -5,7 +5,6 @@ import 'package:flutter_app_publisher/src/api/app_package_publisher.dart';
 import 'package:http/http.dart' as http;
 
 const kEnv360Cookie = '360_COOKIE';
-const kEnv360ApkName = '360_APK_NAME';
 const kEnv360AppId = '360_APP_ID';
 const kEnv360AppQId = '360_APP_QID';
 const kEnv360AppKey = '360_APP_KEY';
@@ -38,12 +37,14 @@ class AppPackagePublisher360 extends AppPackagePublisher {
       }) async {
 
     try{
+
+      File file = fileSystemEntity as File;
       globalEnvironment = environment ?? Platform.environment;
 
       cookie = globalEnvironment[kEnv360Cookie]??'';
       appId = globalEnvironment[kEnv360AppId]??'';
       appQId = globalEnvironment[kEnv360AppQId]??'';
-      apkName = globalEnvironment[kEnv360ApkName]??'';
+      apkName = file.path.split("/").last;
       appKey = globalEnvironment[kEnv360AppKey]??'';
       updateLog = globalEnvironment[kEnvUpdateLog]??'';
 
@@ -51,10 +52,10 @@ class AppPackagePublisher360 extends AppPackagePublisher {
       final jsonFile = (environment ?? Platform.environment)[kEnv360AppSubmitInfo];
       Map<String,dynamic> releaseNotesMap = await loadReleaseNotes(jsonFile);
 
-      File file = fileSystemEntity as File;
-      print("开始上传APK...");
+
+      print("360开始上传APK...");
       Map<String,dynamic> data = await upload360Apk(file.path);
-      print("上传APK完成");
+      print("360上传APK完成");
 
       // Map<String,dynamic> data = {
       //   "label": "挖煤姬",
@@ -143,7 +144,7 @@ class AppPackagePublisher360 extends AppPackagePublisher {
       await http.MultipartFile.fromPath(
         "Filedata",
         apkPath,
-        filename: apkName,
+        filename: apkName
       ),
     );
 

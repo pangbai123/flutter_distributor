@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_app_publisher/src/api/app_package_publisher.dart';
+import 'package:flutter_app_publisher/src/publishers/ali/app_package_publisher_ali.dart';
 import 'package:flutter_app_publisher/src/publishers/doorzo/app_package_publisher_doorzo.dart';
 import 'package:flutter_app_publisher/src/publishers/doorzo_pda/app_package_publisher_doorzo_pda.dart';
 import 'package:flutter_app_publisher/src/publishers/doorzo_win/app_package_publisher_doorzo_win.dart';
@@ -35,6 +36,7 @@ class FlutterAppPublisher {
     AppPackagePublisherHmos(),
     AppPackagePublisherTencent(),
     AppPackagePublisher360(),
+    AppPackagePublisherAli(),
   ];
 
   Future<PublishResult> publish(
