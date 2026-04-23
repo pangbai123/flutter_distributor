@@ -156,7 +156,7 @@ class AppPackagePublisher360 extends AppPackagePublisher {
     var data = jsonDecode(body);
 
     if (data["status"] != 0) {
-      throw Exception("上传失败");
+      throw Exception("上传失败 + ${data}");
     }
     return data["data"];
   }
