@@ -51,13 +51,24 @@ class AppPackagePublisherMi extends AppPackagePublisher {
   ) async {
     var request = http.MultipartRequest('POST',
         Uri.parse('https://api.developer.xiaomi.com/devupload/dev/push'));
+    // 2026-02-04 起 testAccount 必须用结构化 JSON；旧字符串格式会返回 result=-10000
     var appInfo = <String, dynamic>{
       'appName': globalEnvironment[kEnvAppName],
       'packageName': globalEnvironment[kEnvPkgName],
       'updateDesc': globalEnvironment[kEnvUpdateLog],
       'privacyUrl': globalEnvironment[kEnvPrivacyUrl],
-      'testAccount':
-          jsonEncode({"zh_CN": "账号：nervzztc@hotmail.com\n密码：123456"}),
+      'testAccount': jsonEncode({
+        'zh_CN': {
+          'accounts': [
+            {
+              't': 1, // 1=账号密码登录
+              'a': 'nervzztc@hotmail.com',
+              'p': '123456',
+            },
+          ],
+          'auditNotes': '使用上方测试账号登录即可体验主要功能',
+        },
+      }),
     };
     var RequestData = <String, dynamic>{
       'userName': globalEnvironment[kEnvMiAccount],
