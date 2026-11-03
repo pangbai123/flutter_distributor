@@ -5,6 +5,7 @@ import 'package:flutter_app_publisher/src/publishers/ali/app_package_publisher_a
 import 'package:flutter_app_publisher/src/publishers/doorzo/app_package_publisher_doorzo.dart';
 import 'package:flutter_app_publisher/src/publishers/doorzo_pda/app_package_publisher_doorzo_pda.dart';
 import 'package:flutter_app_publisher/src/publishers/doorzo_win/app_package_publisher_doorzo_win.dart';
+import 'package:flutter_app_publisher/src/publishers/doorzo_win/app_package_publisher_doorzo_win_test.dart';
 import 'package:flutter_app_publisher/src/publishers/hmos/app_package_publisher_hmos.dart';
 import 'package:flutter_app_publisher/src/publishers/honor/app_package_publisher_honor.dart';
 import 'package:flutter_app_publisher/src/publishers/huawei/app_package_publisher_huawei.dart';
@@ -33,6 +34,7 @@ class FlutterAppPublisher {
     AppPackagePublisherVivoOversea(),
     AppPackagePublisherDoorzoPda(),
     AppPackagePublisherDoorzoWin(),
+    AppPackagePublisherDoorzoWinTest(),
     AppPackagePublisherHmos(),
     AppPackagePublisherTencent(),
     AppPackagePublisher360(),
